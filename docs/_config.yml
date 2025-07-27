@@ -1,49 +1,64 @@
-# Jekyll configuration for GitHub Pages
-title: Aditi - AsciiDoc DITA Integration
-description: A CLI tool to prepare AsciiDoc files for migration to DITA
-author: Rolfe DH
-email: your-email@example.com
-baseurl: "/aditi" # the subpath of your site, e.g. /blog
-url: "https://rolfedh.github.io" # the base hostname & protocol for your site
+title: Aditi
+description: AsciiDoc to DITA integration tool for technical writers
+baseurl: "/aditi"
+url: "https://rolfedh.github.io"
 
-# Build settings
-markdown: kramdown
-theme: minima
+# Modern theme - Just the Docs
+remote_theme: just-the-docs/just-the-docs@v0.8.2
 plugins:
-  - jekyll-feed
-  - jekyll-seo-tag
+  - jekyll-remote-theme
+
+# Just the Docs theme configuration
+color_scheme: light
+search_enabled: true
+search:
+  # Split pages into sections that can be searched individually
+  heading_level: 2
+  # Maximum amount of previews per search result
+  previews: 2
+  # Maximum amount of words to display before a matched word in the preview
+  preview_words_before: 3
+  # Maximum amount of words to display after a matched word in the preview
+  preview_words_after: 3
+  # Set the search token separator
+  tokenizer_separator: /[\s\-/]+/
+  # Display the relative url in search results
+  rel_url: true
+  # Enable or disable the search button that appears in the bottom right corner of every page
+  button: false
+
+# Footer configuration
+footer_content: "Copyright &copy; 2025 Aditi. Distributed under the MIT License."
+
+# Social links (optional)
+gh_edit_link: true
+gh_edit_repository: "https://github.com/rolfedh/aditi"
+gh_edit_branch: "main"
+gh_edit_source: docs
+gh_edit_view_mode: "tree"
+
+# Navigation structure
+nav_sort: case_insensitive
+
+# Markdown configuration
+markdown: kramdown
+kramdown:
+  input: GFM
+  syntax_highlighter: rouge
 
 # Collections
 collections:
   design:
     output: true
     permalink: /design/:name
-
-# Defaults
-defaults:
-  - scope:
-      path: ""
-      type: "posts"
-    values:
-      layout: "post"
-      author: "Rolfe DH"
-  - scope:
-      path: ""
-      type: "design"
-    values:
-      layout: "page"
-
-# Navigation
-header_pages:
-  - design.md
-  - about.md
+  posts:
+    output: true
+    permalink: /blog/:year/:month/:day/:title/
 
 # Exclude from processing
 exclude:
+  - README.md
   - Gemfile
   - Gemfile.lock
   - node_modules
-  - vendor/bundle/
-  - vendor/cache/
-  - vendor/gems/
-  - vendor/ruby/
+  - vendor

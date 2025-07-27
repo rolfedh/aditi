@@ -79,7 +79,4 @@ User configuration stored in `~/aditi-data/config.json`:
 
 ## Post Writing Template
 
-- Always use this template when I say "write a post":
-  ```
-  Always use this template when I say "write a post"
-  ```
+- Always use this template, docs/_posts/YYYY-MM-DD-post-template.md, when I say "write a post".
