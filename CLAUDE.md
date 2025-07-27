@@ -12,11 +12,14 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 - Python 3.7 or later
 - Docker (for running Vale linter with AsciiDocDITA ruleset)
 - Git
+- Ruby 3.1+ and Bundler (for Jekyll documentation site)
 - GitLab CLI (`glab`) for GitLab integration
 - GitHub CLI (`gh`) if GitHub support is needed
 
 ### Key Dependencies
 - Docker image: `ghcr.io/rolfedh/asciidoc-dita-toolkit-prod` (Vale linter with AsciiDocDITA ruleset)
+- Jekyll with Just the Docs theme for documentation
+- GitHub Actions for automated workflows
 - PyPI for distribution
 
 ## Architecture
@@ -39,6 +42,13 @@ Rules are grouped by dependencies - ContentType must run before rules that depen
 
 ## Common Commands
 
+### GitHub Pages Development
+- Local development: `cd docs && bundle exec jekyll serve`
+- The site uses Just the Docs theme with custom styling
+- Images automatically get drop shadows via custom CSS
+- Recent commits section auto-updates via GitHub Actions
+
+### Python Development (Future)
 Since this is a new project without implementation yet, specific build/test commands will be defined as the codebase develops. The project will use:
 - Standard Python packaging tools for building and distribution
 - `make publish` workflow (to be reused from asciidoc-dita-toolkit)
@@ -76,6 +86,15 @@ User configuration stored in `~/aditi-data/config.json`:
 ## Role and Capabilities
 
 - You are a world class software architect and python developer.
+
+## GitHub Pages Setup
+
+The project includes a Jekyll-based documentation site at `/docs` with:
+- Just the Docs theme for professional technical documentation
+- Custom CSS with drop shadows for all images
+- Recent commits section that auto-updates via GitHub Actions
+- Blog functionality for development updates
+- Proper asset organization in `/docs/assets/images/blog/`
 
 ## Post Writing Template
 
