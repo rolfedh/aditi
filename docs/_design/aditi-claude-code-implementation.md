@@ -21,7 +21,7 @@ This document provides an optimized implementation plan for building Aditi using
 2. Set up pyproject.toml for modern Python packaging
 3. Configure development dependencies (pytest, mypy, ruff, black)
 4. Initialize git repository with .gitignore
-5. Create Docker integration module for Vale container
+5. Create Podman integration module for Vale container
 6. Set up basic CLI framework using Click or Typer
 
 **Directory Structure**:
@@ -32,8 +32,8 @@ aditi/
 │       ├── __init__.py
 │       ├── cli.py          # Main CLI entry point
 │       ├── config.py       # Configuration management
-│       ├── docker.py       # Docker/Vale integration
-│       ├── git.py          # Git automation
+│       ├── podman.py       # Podman/Vale integration
+│       ├── git.py          # Git operation guidance
 │       ├── rules/         # Rule implementations
 │       │   ├── __init__.py
 │       │   ├── base.py    # Base rule class
@@ -54,7 +54,7 @@ aditi/
 **Goal**: Build essential components for rule processing
 
 **Claude Code Tasks**:
-1. **Docker Integration Module**
+1. **Podman Integration Module**
    - Create Vale container wrapper
    - Handle container lifecycle (start/stop/cleanup)
    - Stream output processing
@@ -67,14 +67,14 @@ aditi/
    - Directory permissions validation
 
 3. **Git Manager**
-   - Branch operations wrapper
-   - Commit automation
-   - GitLab/GitHub CLI integration
-   - Conflict detection
+   - Prompt users for branch operations
+   - Guide users through commit process
+   - Provide commands for GitLab/GitHub CLI
+   - Help users identify conflicts
 
 **Testing Approach**:
 - Use pytest with fixtures for each component
-- Mock Docker and Git operations for unit tests
+- Mock Podman and Git operations for unit tests
 - Create integration tests with real containers
 
 ### Phase 2: Rule Engine Implementation (6-8 hours)
@@ -87,10 +87,10 @@ aditi/
    class Rule(ABC):
        @abstractmethod
        def detect(self, file_path: Path) -> List[Violation]
-       
+
        @abstractmethod
        def fix(self, violation: Violation) -> Optional[Fix]
-       
+
        @property
        @abstractmethod
        def fix_type(self) -> FixType  # FULLY_DETERMINISTIC, PARTIALLY_DETERMINISTIC, NON_DETERMINISTIC
@@ -129,16 +129,22 @@ aditi/
    @cli.command()
    def journey():
        """Start guided migration workflow"""
-       
+       # Guides user through setup
+       # Prompts for git operations when needed
+
    @cli.command()
    @click.argument('rule')
    def check(rule):
        """Run specific rule check"""
-       
+
    @cli.command()
    @click.argument('rule')
    def fix(rule):
        """Apply fixes for specific rule"""
+       # After fixes, prompt user to:
+       # - Review changes
+       # - Create commits
+       # - Push branches
    ```
 
 3. **User Interaction**
@@ -147,9 +153,9 @@ aditi/
    - Confirmation prompts
    - Clear error messages
 
-### Phase 4: Automation & Reporting (3-4 hours)
+### Phase 4: Reporting & User Guidance (3-4 hours)
 
-**Goal**: Complete workflow automation
+**Goal**: Generate reports and guide users through git workflows
 
 **Claude Code Tasks**:
 1. **Report Generator**
@@ -158,16 +164,16 @@ aditi/
    - Fix statistics
    - Action items for users
 
-2. **PR Automation**
-   - GitLab API integration
-   - PR description generation
-   - Link to reports
-   - Merge instructions
+2. **PR Creation Guidance**
+   - Generate PR description templates
+   - Provide GitLab/GitHub CLI commands
+   - Include links to reports
+   - Guide users through PR creation
 
 3. **Batch Processing**
    - Multiple rule execution
-   - Transaction-like commits
-   - Rollback on failure
+   - Prompt user to commit after each batch
+   - Guide rollback process if needed
 
 ## Claude Code Workflow Patterns
 
@@ -221,9 +227,9 @@ aditi/
 
 ## Sample Implementation Requests for Claude Code
 
-### Request 1: Docker Integration
+### Request 1: Podman Integration
 ```
-"Create a Docker integration module that:
+"Create a Podman integration module that:
 - Manages Vale container lifecycle
 - Streams output in real-time
 - Handles errors gracefully
@@ -265,7 +271,7 @@ tests/
 │   └── vale-output/
 ├── unit/
 │   ├── test_rules.py
-│   ├── test_docker.py
+│   ├── test_podman.py
 │   └── test_git.py
 └── integration/
     ├── test_workflows.py
@@ -277,12 +283,12 @@ tests/
 1. **Parallel Processing**
    - Process multiple files concurrently
    - Use asyncio for I/O operations
-   - Batch Docker commands
+   - Batch Podman commands
 
 2. **Caching**
    - Cache Vale results
    - Store parsed AST for files
-   - Reuse Docker containers
+   - Reuse Podman containers
 
 3. **Memory Management**
    - Stream large files
@@ -296,15 +302,15 @@ tests/
    - Validate configuration values
    - Check directory permissions
 
-2. **Docker Security**
-   - Run containers with minimal privileges
+2. **Podman Security**
+   - Run rootless containers by default
    - Use specific image versions
    - Mount only necessary directories
 
 3. **Git Operations**
    - Never store credentials
-   - Use SSH agent forwarding
-   - Validate branch names
+   - Prompt users to use SSH agent
+   - Validate branch names before suggesting
 
 ## Continuous Integration
 
@@ -331,7 +337,7 @@ jobs:
 ### PyPI Publishing
 1. Use `build` for package creation
 2. Test with TestPyPI first
-3. Automate with GitHub Actions
+3. Use GitHub Actions for CI/CD
 4. Use semantic versioning
 
 ## Next Steps
