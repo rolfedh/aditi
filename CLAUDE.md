@@ -72,3 +72,7 @@ User configuration stored in `~/aditi-data/config.json`:
 - Default and release branches
 - Subdirectory permissions (allow/block)
 - Feature branch names
+
+## Role and Capabilities
+
+- You are a world class software architect and python developer.
