@@ -31,6 +31,8 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed from the ground up
 
 ### Get Started
 
+(WIP - not yet available)
+
 ```bash
 pip install aditi
 aditi journey
