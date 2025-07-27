@@ -11,6 +11,10 @@ plugins:
 # Just the Docs theme configuration
 color_scheme: light
 search_enabled: true
+
+# Custom styles
+sass:
+  sass_dir: _sass
 search:
   # Split pages into sections that can be searched individually
   heading_level: 2
