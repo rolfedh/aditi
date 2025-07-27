@@ -17,6 +17,35 @@ Aditi (short for "asciidoc dita integration") is a CLI tool designed to help tec
   </article>
 {% endfor %}
 
+## Recent Commits
+
+<div class="recent-commits">
+{% if site.data.recent_commits %}
+  {% for commit in site.data.recent_commits.commits limit:5 %}
+    <article class="commit-preview">
+      <h4>
+        <a href="https://github.com/rolfedh/aditi/commit/{{ commit.sha }}" target="_blank">
+          {{ commit.subject | truncate: 80 }}
+        </a>
+      </h4>
+      <p class="commit-meta">
+        {{ commit.date }} by {{ commit.author }}
+        <span class="commit-sha">({{ commit.sha | slice: 0, 7 }})</span>
+      </p>
+      {% if commit.body %}
+        <div class="commit-excerpt">
+          {{ commit.body | strip | split: "
+
+" | first | truncate: 200 }}
+        </div>
+      {% endif %}
+    </article>
+  {% endfor %}
+{% else %}
+  <p>No recent commits data available.</p>
+{% endif %}
+</div>
+
 ## About Aditi
 
 Aditi is a complete reboot of asciidoc-dita-toolkit, designed from the ground up with modern software architecture principles. The tool provides an interactive CLI experience that automates the detection and fixing of AsciiDocDITA rule violations.

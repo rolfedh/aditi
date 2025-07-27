@@ -24,3 +24,43 @@ table img {
 pre img {
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.06);
 }
+
+// Recent commits section styling
+.recent-commits {
+  margin-top: 1rem;
+  
+  .commit-preview {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e1e4e8;
+    
+    &:last-child {
+      border-bottom: none;
+    }
+    
+    h4 {
+      margin-bottom: 0.25rem;
+      font-size: 1.1rem;
+    }
+    
+    .commit-meta {
+      color: #586069;
+      font-size: 0.875rem;
+      margin-bottom: 0.5rem;
+      
+      .commit-sha {
+        font-family: monospace;
+        background-color: #f3f4f6;
+        padding: 0.125rem 0.375rem;
+        border-radius: 3px;
+        font-size: 0.75rem;
+      }
+    }
+    
+    .commit-excerpt {
+      color: #24292e;
+      font-size: 0.875rem;
+      line-height: 1.5;
+    }
+  }
+}
