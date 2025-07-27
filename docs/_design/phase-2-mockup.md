@@ -19,9 +19,9 @@ Sarah is a technical writer with a repository containing 50+ AsciiDoc files that
 ```bash
 $ aditi --help
 
- Usage: aditi [OPTIONS] COMMAND [ARGS]...                                       
-                                                                                
- AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA       
+ Usage: aditi [OPTIONS] COMMAND [ARGS]...
+
+ AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --version             -V        Show version and exit                        │
@@ -49,7 +49,7 @@ $ aditi init
 [17:21:27] INFO     Successfully downloaded AsciiDocDITA styles
 
 ⠼ Pulling Vale container image...
-⠼ Creating Vale configuration... 
+⠼ Creating Vale configuration...
 
 ✓ Aditi initialized successfully!
 Vale configuration created at: .vale.ini
@@ -79,7 +79,7 @@ $ aditi check docs/
   docs/procedures/install.adoc:12   Replace '&trade;' with '{trade}'
   ... and 19 more
 
-🟡 ContentType (8 violations)  
+🟡 ContentType (8 violations)
   docs/procedures/install.adoc:1    Missing content type attribute (detected: PROCEDURE)
   docs/concepts/overview.adoc:1     Missing content type attribute (detected: CONCEPT)
   docs/reference/api.adoc:1         Missing content type attribute (detected: REFERENCE)
@@ -131,13 +131,13 @@ This interactive workflow will help you:
 
 ? Which directories should Aditi process? (Space to select, Enter to confirm)
   ❯◉ docs/
-   ○ internal/  
+   ○ internal/
    ◯ archived/
    ◉ modules/
 
 ✓ Configuration saved to ~/aditi-data/config.json
 
-? What would you like to name your feature branch? 
+? What would you like to name your feature branch?
   Suggested: aditi/2025-07-27-asciidoc-dita-migration
   > aditi/dita-migration-phase1
 
@@ -245,15 +245,15 @@ These files are missing content type attributes:
 
 1. docs/procedures/install.adoc
    Detected type: PROCEDURE (based on filename prefix)
-   
-   ? Apply detected content type? 
+
+   ? Apply detected content type?
      ❯ Yes, add ':_mod-docs-content-type: PROCEDURE'
        No, I'll set it manually
        Skip this file
 
-2. docs/concepts/overview.adoc  
+2. docs/concepts/overview.adoc
    Detected type: CONCEPT (based on filename prefix)
-   
+
    ? Apply detected content type?
      ❯ Yes, add ':_mod-docs-content-type: CONCEPT'
        No, let me choose:
@@ -287,20 +287,16 @@ These violations require manual intervention:
 
 📄 docs/procedures/install.adoc:34
    ⚠️  Task sections must use numbered lists
-   
+
    Current:
-   ```
-   * Download the installer
-   * Run the setup wizard  
-   * Configure settings
-   ```
-   
+   • Download the installer
+   • Run the setup wizard
+   • Configure settings
+
    Should be:
-   ```
    1. Download the installer
    2. Run the setup wizard
    3. Configure settings
-   ```
 
 ? How would you like to proceed?
   ❯ Open file in editor
@@ -350,7 +346,7 @@ compatibility issues identified by the AsciiDocDITA ruleset.
 - **EntityReference** (23 fixes): Replaced HTML entities with AsciiDoc equivalents
 - **ContentType** (8 fixes): Added missing content type attributes
 
-### Manual Review Required  
+### Manual Review Required
 - **TaskSection** (3 issues): Marked with TODO comments for manual conversion
 
 ## Testing
@@ -420,7 +416,7 @@ $ aditi check docs/
 
 🔵 TaskSection (3 violations)
   docs/procedures/install.adoc:34   Task sections require numbered lists
-  docs/procedures/config.adoc:22    Task sections require numbered lists  
+  docs/procedures/config.adoc:22    Task sections require numbered lists
   docs/procedures/deploy.adoc:45    Task sections require numbered lists
 
 📈 Summary:
