@@ -20,19 +20,12 @@ This document outlines all tasks and prerequisites that must be completed before
 - [x] Verify VS Code with Claude Code extension is set up
 
 ### 2. Container Setup
-- [ ] Pull the Vale linter container: `podman pull ghcr.io/rolfedh/asciidoc-dita-toolkit-prod`
-- [ ] Test Podman can run the Vale container
-- [ ] Verify container has access to local file system
-- [ ] Test Vale with sample AsciiDoc files
+- [x] Pull the Vale linter container: ~~`podman pull ghcr.io/rolfedh/asciidoc-dita-toolkit-prod`~~ Using `docker.io/jdkato/vale:latest`
+- [x] Test Podman can run the Vale container
+- [x] Verify container has access to local file system
+- [x] Test Vale with sample AsciiDoc files
 
-1. Run the container and open a shell (replace /docs with your AsciiDoc directory)
-podman run -it --rm -v "$PWD/docs:/docs" ghcr.io/rolfedh/asciidoc-dita-toolkit-prod /bin/bash
-
-2. Inside the container, list files to verify access
-ls /docs
-
-3. (Optional) Run Vale against a sample file inside the container
-vale /docs/sample.adoc
+**Note**: Implementation uses the official Vale Docker image (`docker.io/jdkato/vale:latest`) instead of the custom image. The AsciiDocDITA styles are downloaded automatically via Vale's package system.
 
 ### 3. Python Development Environment
 - [x] Set up virtual environment for Python development
