@@ -15,7 +15,7 @@ The Aditi project needs to validate AsciiDoc files against DITA compatibility ru
 
 ## Initial Requirements
 
-Looking at the [pre-implementation todo list](/design/claude-code-todo-list/), the container setup was marked as critical for Phase 0. The goal was clear: after installing Aditi from PyPI, users should have Vale running with AsciiDocDITA styles automatically.
+Looking at the [pre-implementation todo list](/aditi/design/claude-code-todo-list/), the container setup was marked as critical for Phase 0. The goal was clear: after installing Aditi from PyPI, users should have Vale running with AsciiDocDITA styles automatically.
 
 The original approach would have required:
 - Maintaining a custom Docker image
@@ -25,7 +25,7 @@ The original approach would have required:
 
 ## The Pivot: Embracing Vale's Package System
 
-While implementing the [container setup tasks](/design/container-setup-tasks/), I discovered Vale's built-in package management system. This led to a cleaner architecture:
+While implementing the [container setup tasks](/aditi/design/container-setup-tasks/), I discovered Vale's built-in package management system. This led to a cleaner architecture:
 
 1. **Use the official Vale Docker image** (`docker.io/jdkato/vale:latest`)
 2. **Download AsciiDocDITA styles dynamically** via Vale's package system

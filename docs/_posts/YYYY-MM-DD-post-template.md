@@ -6,6 +6,14 @@ tags: [aditi, asciidoc, dita, migration, technical-writing]
 summary: "A brief 1-2 sentence summary of your blog post that will appear in listings."
 ---
 
+<!-- 
+LINK GUIDELINES - CRITICAL FOR PREVENTING 404 ERRORS:
+- Design docs: /aditi/design/[document-name]/
+- Blog posts: /aditi/blog/YYYY/MM/DD/post-title/
+- Images: /aditi/assets/images/blog/YYYY-MM-DD/image.png
+- Always include /aditi/ prefix for internal links!
+-->
+
 # Your Blog Post Title Here
 
 ## Introduction
@@ -56,6 +64,13 @@ Summarize key takeaways and reinforce the main message of your post.
 - [Link to relevant documentation]()
 - [Link to related tools or projects]()
 - [Link to further reading]()
+
+<!-- EXAMPLES OF CORRECT INTERNAL LINKS:
+- [Implementation Plan](/aditi/design/claude-code-implementation/)
+- [Todo List](/aditi/design/claude-code-todo-list/)
+- [Container Setup Guide](/aditi/design/container-setup-tasks/)
+- [Previous Blog Post](/aditi/blog/2025/01/27/setting-up-github-pages/)
+-->
 
 ### About the Author
 

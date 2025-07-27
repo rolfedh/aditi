@@ -1,3 +1,9 @@
+---
+layout: page
+title: "Container Setup Implementation Guide"
+permalink: /design/container-setup-tasks/
+---
+
 # Container Setup Implementation Guide
 
 This document provides step-by-step instructions for implementing Vale container integration in Aditi.
