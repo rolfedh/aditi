@@ -25,18 +25,27 @@ This document outlines all tasks and prerequisites that must be completed before
 - [ ] Verify container has access to local file system
 - [ ] Test Vale with sample AsciiDoc files
 
+1. Run the container and open a shell (replace /docs with your AsciiDoc directory)
+podman run -it --rm -v "$PWD/docs:/docs" ghcr.io/rolfedh/asciidoc-dita-toolkit-prod /bin/bash
+
+2. Inside the container, list files to verify access
+ls /docs
+
+3. (Optional) Run Vale against a sample file inside the container
+vale /docs/sample.adoc
+
 ### 3. Python Development Environment
-- [ ] Set up virtual environment for Python development
-- [ ] Install development tools: pytest, mypy, ruff, black
-- [ ] Install Click or Typer for CLI framework
-- [ ] Install Rich for enhanced CLI output
-- [ ] Configure IDE for Python development
+- [x] Set up virtual environment for Python development
+- [x] Install development tools: pytest, mypy, ruff, black
+- [x] Install Click or Typer for CLI framework
+- [x] Install Rich for enhanced CLI output
+- [x] Configure IDE for Python development
 
 ## Project Foundation Tasks
 
 ### 4. Repository Setup
-- [ ] Create new Git repository for Aditi
-- [ ] Set up proper .gitignore for Python projects
+- [x] Create new Git repository for Aditi
+- [x] Set up proper .gitignore for Python projects
 - [ ] Configure branch protection rules
 - [ ] Set up commit signing (if required)
 
@@ -55,7 +64,7 @@ This document outlines all tasks and prerequisites that must be completed before
 ## Design Decisions
 
 ### 7. Architecture Finalization
-- [ ] Confirm CLI framework choice (Click vs Typer)
+- [x] Confirm CLI framework choice: Typer (~~Click vs~~ Typer)
 - [ ] Define exact JSON schema for configuration
 - [ ] Document git workflow for users
 - [ ] Define PR template format
