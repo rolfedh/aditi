@@ -1,3 +1,9 @@
+---
+layout: page
+title: "Aditi Implementation Plan for Claude Code"
+permalink: /design/claude-code-implementation/
+---
+
 # Aditi Implementation Plan for Claude Code
 
 ## Overview

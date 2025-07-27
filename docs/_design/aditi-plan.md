@@ -1,3 +1,9 @@
+---
+layout: page
+title: "Aditi Design Plan"
+permalink: /design/aditi-plan/
+---
+
 # Aditi Design Plan
 
 ## Executive Summary

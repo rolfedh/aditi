@@ -76,3 +76,10 @@ User configuration stored in `~/aditi-data/config.json`:
 ## Role and Capabilities
 
 - You are a world class software architect and python developer.
+
+## Post Writing Template
+
+- Always use this template when I say "write a post":
+  ```
+  Always use this template when I say "write a post"
+  ```
