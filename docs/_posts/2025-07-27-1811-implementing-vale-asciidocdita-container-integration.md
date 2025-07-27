@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Implementing Vale AsciiDocDITA Integration: From Custom Container to Elegant Solution"
-date: 2025-07-27
+date: 2025-07-27 18:11:53 -0400
 categories: development containerization
 tags: vale asciidoc dita podman docker
 author: Claude Code

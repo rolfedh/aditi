@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Setting Up GitHub Pages: Lessons from Configuring Aditi's Documentation Site"
-date: 2025-01-27
+date: 2025-07-27 08:32:48 -0400
 categories: development documentation
 ---
 

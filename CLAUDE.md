@@ -190,7 +190,28 @@ permalink: /design/document-name/
 - Verify links work at `http://localhost:4000/aditi/`
 - Use relative paths starting with `/aditi/` for internal content
 
-## Post Writing Template
+## Post Writing Guidelines
 
-- Always use this template, docs/_posts/YYYY-MM-DD-post-template.md, when I say "write a post"
-- **IMPORTANT**: Follow the link guidelines above when creating internal links in blog posts
+### Automated Blog Post Creation
+Use the helper script for consistent filenames and timestamps:
+```bash
+./scripts/new-blog-post.sh "Your Blog Post Title"
+```
+
+This automatically creates:
+- Correct filename: `YYYY-MM-DD-HHMM-post-title.md`
+- Proper timestamp in front matter with current timezone
+- Template content based on `docs/_posts/YYYY-MM-DD-post-template.md`
+
+### Manual Blog Post Creation
+If creating manually:
+1. **Filename Format**: `YYYY-MM-DD-HHMM-post-title.md`
+   - Get timestamp: `date '+%Y-%m-%d-%H%M'`
+   - Example: `2025-07-27-1423-implementing-new-feature.md`
+
+2. **Front Matter Timestamp**: `YYYY-MM-DD HH:MM:SS -0400`
+   - Get timestamp: `date '+%Y-%m-%d %H:%M:%S %z'`  
+   - Example: `2025-07-27 14:23:45 -0400`
+
+3. **Always use** `docs/_posts/YYYY-MM-DD-post-template.md` as template
+4. **IMPORTANT**: Follow the link guidelines above when creating internal links in blog posts

@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Jekyll Theme Comparison: Minima vs Just the Docs"
-date: 2025-01-27 09:00:00
+date: 2025-07-27 08:45:19 -0400
 categories: documentation jekyll
 ---
 

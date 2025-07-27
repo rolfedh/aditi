@@ -1,12 +1,28 @@
 ---
 title: "Your Blog Post Title Here"
-date: YYYY-MM-DD
+date: YYYY-MM-DD HH:MM:SS -0400
 author: Your Name
 tags: [aditi, asciidoc, dita, migration, technical-writing]
 summary: "A brief 1-2 sentence summary of your blog post that will appear in listings."
 ---
 
 <!-- 
+FILENAME AND TIMESTAMP GUIDELINES:
+
+1. FILENAME FORMAT: YYYY-MM-DD-HHMM-post-title.md
+   - Use current date and time when creating the file
+   - Example: 2025-07-27-1423-implementing-new-feature.md (created at 2:23 PM)
+
+2. TIMESTAMP FORMAT: YYYY-MM-DD HH:MM:SS -0400
+   - Use exact same date/time as filename
+   - Use 24-hour format (14:23 not 2:23 PM)
+   - Use EDT timezone: -0400 (or EST: -0500 in winter)
+   - Example: 2025-07-27 14:23:45 -0400
+
+3. QUICK REFERENCE:
+   Current date/time: Use `date '+%Y-%m-%d-%H%M'` for filename
+   Current timestamp: Use `date '+%Y-%m-%d %H:%M:%S %z'` for front matter
+
 LINK GUIDELINES - CRITICAL FOR PREVENTING 404 ERRORS:
 - Design docs: /aditi/design/[document-name]/
 - Blog posts: /aditi/blog/YYYY/MM/DD/post-title/

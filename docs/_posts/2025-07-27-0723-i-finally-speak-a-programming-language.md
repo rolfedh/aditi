@@ -1,6 +1,6 @@
 ---
 title: "I Finally Speak a Programming Language: My Journey into Vibecoding"
-date: 2025-01-27
+date: 2025-07-27 07:23:48 -0400
 author: Rolfe DH
 tags: [aditi, vibecoding, ai-coding, claude-code, refactoring, asciidoc, dita]
 summary: "How AI coding assistants transformed me from a non-programmer to someone who ships code daily, and why I'm starting over with Aditi."
