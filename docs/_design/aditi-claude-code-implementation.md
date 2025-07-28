@@ -19,7 +19,7 @@ This document provides an optimized implementation plan for building Aditi using
 **Completed Tasks**:
 1. ✅ Created initial Python project structure
 2. ✅ Configured Typer as CLI framework with Rich for output
-3. ✅ Set up Git repository with proper .gitignore
+3. ✅ Set up repository with proper .gitignore
 4. ✅ Implemented Vale container integration (`ValeContainer` class)
 5. ✅ Created init command with progress indicators
 6. ✅ Established test scripts for validation
@@ -55,7 +55,7 @@ aditi/
 │   ├── __init__.py
 │   ├── cli.py          # Main CLI entry point
 │   ├── config.py       # Configuration management
-│   ├── git.py          # Git operation guidance
+│   ├── workflow.py     # Workflow guidance
 │   └── rules/         # Rule implementations
 ├── pyproject.toml
 ├── Makefile
@@ -70,7 +70,7 @@ aditi/
 1. ✅ Created `pyproject.toml` with modern Python packaging
 2. ✅ Implemented main CLI entry point (`cli.py`) with Typer
 3. ✅ Built configuration manager with Pydantic models  
-4. ✅ Created git guidance module for workflow assistance
+4. ✅ Created workflow guidance module for process assistance
 5. ✅ Set up proper Python package structure with exports
 6. ✅ Comprehensive test suite (34/36 tests passing)
 7. ✅ Working CLI with all placeholder commands
@@ -95,16 +95,16 @@ aditi/
    - ✅ Session state management with persistence
    - ✅ Subdirectory permissions with precedence logic
 
-**4. Git Manager** (git.py) ✅
-   - ✅ Git workflow guidance without automation
-   - ✅ Branch name generation and command suggestions
-   - ✅ Commit message formatting assistance
-   - ✅ PR creation guidance for GitHub/GitLab CLI
+**4. Workflow Manager** (workflow.py) ✅
+   - ✅ High-level workflow guidance
+   - ✅ Process documentation generation
+   - ✅ Change summary formatting
+   - ✅ Next steps recommendations
 
 **Testing Results**: 34/36 tests passing (94% success rate)
-- ✅ Comprehensive unit tests for config and git modules
+- ✅ Comprehensive unit tests for config and workflow modules
 - ✅ Integration tests for CLI functionality
-- ✅ Shared fixtures for temporary directories and git repos
+- ✅ Shared fixtures for temporary directories and test files
 - ✅ Proper mocking for external dependencies
 
 ### Phase 2: Rule Engine Implementation (6-8 hours)
@@ -160,7 +160,7 @@ aditi/
    def journey():
        """Start guided migration workflow"""
        # Guides user through setup
-       # Prompts for git operations when needed
+       # Provides workflow recommendations
 
    @cli.command()
    @click.argument('rule')
@@ -173,8 +173,8 @@ aditi/
        """Apply fixes for specific rule"""
        # After fixes, prompt user to:
        # - Review changes
-       # - Create commits
-       # - Push branches
+       # - Document modifications
+       # - Proceed with workflow
    ```
 
 3. **User Interaction**
@@ -185,7 +185,7 @@ aditi/
 
 ### Phase 4: Reporting & User Guidance (3-4 hours)
 
-**Goal**: Generate reports and guide users through git workflows
+**Goal**: Generate reports and guide users through migration workflows
 
 **Claude Code Tasks**:
 1. **Report Generator**
@@ -194,16 +194,16 @@ aditi/
    - Fix statistics
    - Action items for users
 
-2. **PR Creation Guidance**
-   - Generate PR description templates
-   - Provide GitLab/GitHub CLI commands
+2. **Change Documentation**
+   - Generate change summary templates
+   - Provide migration report details
    - Include links to reports
-   - Guide users through PR creation
+   - Guide users through review process
 
 3. **Batch Processing**
    - Multiple rule execution
-   - Prompt user to commit after each batch
-   - Guide rollback process if needed
+   - Prompt user to review after each batch
+   - Guide recovery process if needed
 
 ## Claude Code Workflow Patterns
 
@@ -302,7 +302,7 @@ tests/
 ├── unit/
 │   ├── test_rules.py
 │   ├── test_podman.py
-│   └── test_git.py
+│   └── test_workflow.py
 └── integration/
     ├── test_workflows.py
     └── test_cli.py
@@ -337,14 +337,14 @@ tests/
    - Use specific image versions
    - Mount only necessary directories
 
-3. **Git Operations**
-   - Never store credentials
-   - Prompt users to use SSH agent
-   - Validate branch names before suggesting
+3. **File Operations**
+   - Always create backups
+   - Validate file permissions
+   - Check available disk space
 
 ## Continuous Integration
 
-### GitHub Actions Workflow
+### CI/CD Workflow
 ```yaml
 name: CI
 on: [push, pull_request]
@@ -367,7 +367,7 @@ jobs:
 ### PyPI Publishing
 1. Use `build` for package creation
 2. Test with TestPyPI first
-3. Use GitHub Actions for CI/CD
+3. Use automated CI/CD pipelines
 4. Use semantic versioning
 
 ## Next Steps

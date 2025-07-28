@@ -14,7 +14,7 @@ Phase 1 has been successfully completed! Here's what we accomplished:
 1. **Modern Python Package** (`pyproject.toml`) with proper dependencies and tool configuration
 2. **Complete CLI Framework** (`src/aditi/cli.py`) with Typer, Rich output, and all command placeholders
 3. **Configuration Management** (`src/aditi/config.py`) with Pydantic models and JSON persistence
-4. **Git Guidance Module** (`src/aditi/git.py`) for workflow assistance without automation
+4. **Workflow Guidance Module** (`src/aditi/workflow.py`) for high-level process guidance
 5. **Comprehensive Testing** (94% test success rate) with unit and integration tests
 6. **Package Structure** with proper exports and metadata
 
@@ -206,7 +206,7 @@ Phase 2 builds directly on Phase 1 infrastructure:
 - **Vale Container**: Use existing `ValeContainer` class for Vale execution
 - **Configuration**: Leverage `ConfigManager` for user settings and session state
 - **CLI Framework**: Implement check command using established Typer patterns
-- **Git Guidance**: Integrate with git workflow after applying fixes
+- **Workflow Guidance**: Provide high-level guidance after applying fixes
 - **Testing**: Extend existing test framework with rule-specific tests
 
 ## 📝 Example Usage After Phase 2
