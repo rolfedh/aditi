@@ -1,3 +1,4 @@
+:_mod-docs-content-type: TBD
 = Test Document with Entity References
 
 This document contains various entity references that need to be fixed.
@@ -6,9 +7,9 @@ This document contains various entity references that need to be fixed.
 
 This is a test&nbsp;document with non-breaking spaces.
 
-We also have em&mdash;dashes and en&ndash;dashes.
+We also have em{mdash};dashes and en{ndash};dashes.
 
-Some &ldquo;quoted text&rdquo; is here too.
+Some {ldquo};quoted text{rdquo}; is here too.
 
 == Code Examples
 
@@ -23,11 +24,11 @@ And inline code: `&nbsp;` should also not be replaced.
 
 == More Examples
 
-Copyright &copy; 2024
-Trademark&trade; symbol
-Registered&reg; mark
+Copyright {copy}; 2024
+Trademark{trade}; symbol
+Registered{reg}; mark
 
-Temperature: 25&deg;C
-Plus/minus: 5&plusmn;2
+Temperature: 25{deg};C
+Plus/minus: 5{plusmn};2
 
-Fractions: &frac12;, &frac14;, &frac34;
+Fractions: {frac12};, {frac14};, {frac34};

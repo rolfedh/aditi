@@ -3,13 +3,13 @@
 import logging
 import sys
 from pathlib import Path
-from typing import Optional
+from typing import List, Optional
 
 import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-from aditi.commands import init_command, check_command
+from aditi.commands import init_command, check_command, journey_command, fix_command
 
 console = Console()
 app = typer.Typer(
@@ -121,53 +121,58 @@ def check(
 
 @app.command()
 def fix(
-    path: Optional[Path] = typer.Argument(
+    paths: Optional[List[Path]] = typer.Argument(
         None,
-        help="Path to fix (file or directory). Defaults to current directory.",
+        help="Paths to fix (files or directories). If not specified, uses configured directories.",
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        readable=True,
+    ),
+    rule: Optional[str] = typer.Option(
+        None,
+        "--rule",
+        "-r",
+        help="Fix only specific rule (e.g., EntityReference)",
     ),
     interactive: bool = typer.Option(
         True,
         "--interactive/--non-interactive",
         "-i/-n",
-        help="Run in interactive mode (prompt for non-deterministic fixes)",
+        help="Run in interactive mode (prompt for confirmation)",
+    ),
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-d",
+        help="Show what would be fixed without applying changes",
     ),
     verbose: bool = verbose_option,
 ) -> None:
     """Fix deterministic DITA compatibility issues in AsciiDoc files.
     
     Automatically applies fixes for issues that can be resolved
-    deterministically. In interactive mode, prompts for user input
-    on non-deterministic issues.
+    deterministically. In interactive mode, prompts for user confirmation
+    before applying fixes.
     """
     setup_logging(verbose)
-    console.print("[yellow]The 'fix' command is not yet implemented.[/yellow]")
-    console.print(
-        "This command will automatically fix deterministic issues "
-        "and guide you through manual fixes."
-    )
-    raise typer.Exit(1)
+    fix_command(paths, rule, interactive, dry_run)
 
 
 @app.command()
 def journey(
     verbose: bool = verbose_option,
 ) -> None:
-    """Start an interactive journey to migrate AsciiDoc files to DITA.
+    """Start an interactive journey to prepare AsciiDoc files for DITA migration.
     
     This guided workflow will:
     - Help you configure Aditi for your repository
-    - Create a feature branch
-    - Run checks and apply fixes
-    - Guide you through the git workflow
-    - Create a pull request when ready
+    - Automatically fix or flag issues for you
+    - Prompt you to review automatic fixes
+    - Prompt you to fix flagged issues
     """
     setup_logging(verbose)
-    console.print("[yellow]The 'journey' command is not yet implemented.[/yellow]")
-    console.print(
-        "This command will provide an interactive, guided experience "
-        "for migrating your AsciiDoc files to DITA."
-    )
-    raise typer.Exit(1)
+    journey_command()
 
 
 def version_callback(value: bool) -> None:

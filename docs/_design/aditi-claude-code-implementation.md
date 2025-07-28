@@ -211,48 +211,124 @@ $ aditi check example-docs/
 Next step: Run 'aditi journey' for guided workflow
 ```
 
-### Phase 3: CLI Experience (4-5 hours) - NEXT PHASE
+### Phase 3: CLI Experience - Interactive Journey & Fix Commands
 
-**Goal**: Create interactive, user-friendly CLI with fix application
+**Goal**: Create interactive, user-friendly CLI following the detailed mockup design
 
-**Remaining Tasks**:
-1. **Fix Command Implementation**
-   - Apply fixes from check results
-   - Interactive and non-interactive modes
-   - File backup and rollback capabilities
-   - Progress tracking and confirmation prompts
+**Key Design Decisions from Mockup**:
+- Use "issue" instead of "violation" throughout
+- Emphasize "preparing" files for DITA, not "migrating"
+- Progressive disclosure with increasing detail
+- User maintains control over all changes
+- Group rules by severity: Error → Warning → Suggestion
+- Apply ContentType rule first (prerequisite for other rules)
 
-2. **Journey Command**
-   - Interactive setup wizard based on phase-2-mockup-revised.md
-   - Directory selection interface
-   - Configuration validation and persistence
-   - Guided workflow for rule application
+**Implementation Tasks**:
 
-3. **Enhanced Command Implementation**
+1. **Journey Command - Interactive Setup Wizard**
    ```python
    @cli.command()
    def journey():
-       """Start guided migration workflow"""
-       # 1. Repository and directory configuration
-       # 2. Interactive rule application
-       # 3. Review and approval workflows
-       # 4. Git workflow guidance
-
-   @cli.command()
-   def fix(paths, interactive=True):
-       """Apply fixes for detected violations"""
-       # 1. Load violations from previous check
-       # 2. Apply deterministic fixes automatically
-       # 3. Prompt for partially deterministic fixes
-       # 4. Generate summary report
+       """Start an interactive journey to prepare AsciiDoc files for DITA migration"""
+       # Phase 1: Repository Configuration
+       - Verify current directory is repository root
+       - If not, instruct user to cd to root and exit
+       - Scan for AsciiDoc directories recursively
+       - Show file counts per directory
+       - Interactive directory selection (arrows/space/enter)
+       - Save configuration to ~/aditi-data/config.json
+       
+       # Phase 2: Rule Application Workflow
+       - Apply rules in order: ContentType → EntityReference → Non-deterministic rules
+       - For each rule:
+         * Show rule description and affected files
+         * Offer choices: Auto-fix/Flag/Skip (A/f/s)
+         * Show progress bar during application
+         * Display summary of changes
+         * Prompt to continue or stop
+       
+       # Phase 3: Completion
+       - Generate preparation report
+       - Save to ~/aditi-data/reports/
+       - Thank user and provide next steps
    ```
 
-4. **Additional Rules Implementation**
-   - ShortDescription rule (non-deterministic)
-   - TaskSection, TaskExample, NestedSection rules
-   - Cross-file dependency handling
+2. **Fix Command - Apply Specific Fixes**
+   ```python
+   @cli.command()
+   def fix(
+       paths: Optional[List[Path]] = typer.Argument(None),
+       rule: Optional[str] = typer.Option(None, "--rule", "-r"),
+       interactive: bool = typer.Option(True, "--interactive/--non-interactive", "-i/-n"),
+       dry_run: bool = typer.Option(False, "--dry-run", "-d")
+   ):
+       """Fix deterministic DITA compatibility issues in AsciiDoc files"""
+       # Load previous check results or run new check
+       # Apply fixes based on rule type:
+       - Fully deterministic: Apply automatically
+       - Partially deterministic: Apply with TBD placeholders
+       - Non-deterministic: Flag with comments
+       # Show progress and summary
+   ```
 
-**Current Status**: Phase 2 complete with functional `check` command. Phase 3 will build on this foundation to create the complete interactive experience.
+3. **Interactive Components**
+   - **Directory Scanner**: Find all .adoc files recursively, ignore symlinks
+   - **Multi-select Interface**: Using questionary or similar library
+   - **Progress Indicators**: Rich progress bars with time estimates
+   - **Confirmation Prompts**: Clear Y/n/r options with explanations
+   - **Rule Descriptions**: Show Vale message before applying fixes
+
+4. **Configuration Enhancements**
+   ```python
+   class JourneyConfig(BaseModel):
+       """Configuration for journey command"""
+       repository_root: Path
+       selected_directories: List[Path]
+       excluded_directories: List[Path] = []
+       ignore_symlinks: bool = True
+       
+   class RuleApplication(BaseModel):
+       """Track rule application choices"""
+       rule_name: str
+       action: Literal["auto-fix", "flag", "skip"]
+       files_affected: List[Path]
+       fixes_applied: int
+   ```
+
+5. **Rule Processing Order**
+   ```python
+   RULE_PROCESSING_ORDER = [
+       # Prerequisites
+       ("ContentType", "warning"),  # Must run first
+       
+       # Error-level rules
+       ("EntityReference", "error"),
+       
+       # Warning-level rules  
+       ("ExampleBlock", "warning"),
+       ("NestedSection", "warning"),
+       
+       # Suggestion-level rules
+       ("TaskSection", "suggestion"),
+       ("TaskExample", "suggestion"),
+       ("ShortDescription", "suggestion"),
+   ]
+   ```
+
+6. **User Interaction Patterns**
+   - **Auto-fix (A)**: Apply fixes automatically, show summary
+   - **Flag (f)**: Insert comments with rule messages
+   - **Skip (s)**: Skip to next rule
+   - **Continue prompts**: After each rule, ask to continue
+   - **Review reminders**: Remind to review changes before continuing
+
+**Key Implementation Details**:
+- Use questionary for interactive prompts
+- Store journey state in session for resume capability
+- Create atomic commits for each rule application
+- Generate markdown reports with change summaries
+- Respect .gitignore and symlink exclusions
+- Validate all paths are within repository root
 
 ### Phase 4: Reporting & User Guidance (3-4 hours)
 

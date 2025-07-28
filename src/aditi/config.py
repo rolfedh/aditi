@@ -4,7 +4,7 @@ import json
 import logging
 from enum import Enum
 from pathlib import Path
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 
 from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings
@@ -134,6 +134,18 @@ class SessionState(BaseModel):
         default_factory=dict,
         description="Files with pending fixes mapped to rule names"
     )
+    journey_state: Optional[str] = Field(
+        None,
+        description="Current state of journey command execution"
+    )
+    journey_progress: Dict[str, Any] = Field(
+        default_factory=dict,
+        description="Progress tracking for journey command"
+    )
+    applied_rules: List[str] = Field(
+        default_factory=list,
+        description="Rules that have been applied in current journey"
+    )
 
     class Config:
         """Pydantic configuration."""
@@ -163,6 +175,18 @@ class AditiConfig(BaseModel):
     allowed_paths: List[Path] = Field(
         default_factory=list,
         description="List of paths allowed for checking"
+    )
+    selected_directories: List[Path] = Field(
+        default_factory=list,
+        description="Directories selected during journey configuration"
+    )
+    excluded_directories: List[Path] = Field(
+        default_factory=list,
+        description="Directories explicitly excluded by user"
+    )
+    ignore_symlinks: bool = Field(
+        True,
+        description="Whether to ignore symlinks when scanning"
     )
 
     def get_current_repository(self) -> Optional[RepositoryConfig]:
