@@ -8,7 +8,7 @@ from unittest.mock import Mock, patch, MagicMock
 from aditi.processor import RuleProcessor, ProcessingResult, FileChange
 from aditi.vale_parser import Violation, Severity
 from aditi.config import AditiConfig
-from aditi.rules import Fix
+from aditi.rules import Fix, FixType
 
 
 class TestProcessingResult:
@@ -52,21 +52,30 @@ class TestRuleProcessor:
     def mock_vale_container(self):
         """Create a mock ValeContainer."""
         container = Mock()
-        container.run_vale.return_value = json.dumps({
-            "test.adoc": {
-                "Alerts": [
-                    {
-                        "Check": "AsciiDocDITA.EntityReference",
-                        "Line": 1,
-                        "Column": 10,
-                        "Message": "Replace '&nbsp;' with '{nbsp}'",
-                        "Severity": "error",
-                        "Match": "&nbsp;",
-                        "Suggestions": ["{nbsp}"]
+        # Mock run_vale to return violations for the test file
+        def mock_run_vale(args):
+            # Filter out --output=JSON to get actual file paths
+            file_paths = [arg for arg in args if not arg.startswith('--')]
+            if file_paths:
+                file_path = file_paths[0]
+                return json.dumps({
+                    file_path: {
+                        "Alerts": [
+                            {
+                                "Check": "AsciiDocDITA.EntityReference",
+                                "Line": 1,
+                                "Column": 10,
+                                "Message": "Replace '&nbsp;' with '{nbsp}'",
+                                "Severity": "error",
+                                "Match": "&nbsp;",
+                                "Suggestions": ["{nbsp}"]
+                            }
+                        ]
                     }
-                ]
-            }
-        })
+                })
+            return "{}"
+        
+        container.run_vale.side_effect = mock_run_vale
         return container
     
     @pytest.fixture
@@ -79,23 +88,53 @@ class TestRuleProcessor:
     @pytest.fixture
     def processor(self, mock_vale_container, mock_config):
         """Create a RuleProcessor with mocks."""
-        with patch('aditi.processor.RuleRegistry') as mock_registry:
+        with patch('aditi.processor.RuleRegistry') as mock_registry_class:
+            # Create a mock registry instance
+            mock_registry = Mock()
+            mock_registry.auto_discover.return_value = None
+            mock_registry.get_rules_in_dependency_order.return_value = []
+            mock_registry.get_rule_for_violation.return_value = None
+            mock_registry_class.return_value = mock_registry
+            
             processor = RuleProcessor(mock_vale_container, mock_config)
+            # Ensure the mock registry is properly set
+            processor.rule_registry = mock_registry
             return processor
     
     def test_process_files_dry_run(self, processor, mock_vale_container, tmp_path):
         """Test processing files in dry run mode."""
-        # Create a test file
+        # Create a test file with absolute path
         test_file = tmp_path / "test.adoc"
         test_file.write_text("Text with &nbsp; entity")
+        # Convert to absolute path
+        test_file = test_file.absolute()
         
-        # Mock the rule registry
+        # Create a mock violation
+        mock_violation = Violation(
+            file_path=test_file,
+            rule_name="EntityReference",
+            line=1,
+            column=11,
+            message="Replace '&nbsp;' with '{nbsp}'",
+            severity=Severity.ERROR,
+            original_text="&nbsp;"
+        )
+        
+        # Create a mock fix
+        mock_fix = Fix(
+            violation=mock_violation,
+            replacement_text="{nbsp}",
+            confidence=1.0
+        )
+        
+        # Mock the rule
         mock_rule = Mock()
         mock_rule.name = "EntityReference"
         mock_rule.can_fix.return_value = True
-        mock_rule.generate_fix.return_value = Mock(spec=Fix)
+        mock_rule.generate_fix.return_value = mock_fix
         
         processor.rule_registry.get_rules_in_dependency_order.return_value = [mock_rule]
+        processor.rule_registry.get_rule_for_violation.return_value = mock_rule
         
         # Process files
         result = processor.process_files([test_file], dry_run=True)
@@ -112,10 +151,12 @@ class TestRuleProcessor:
     
     def test_process_files_with_fixes(self, processor, mock_vale_container, tmp_path):
         """Test processing files with actual fixes."""
-        # Create a test file
+        # Create a test file with absolute path
         test_file = tmp_path / "test.adoc"
         original_content = "Text with &nbsp; entity"
         test_file.write_text(original_content)
+        # Convert to absolute path
+        test_file = test_file.absolute()
         
         # Create a mock fix
         mock_violation = Violation(
@@ -141,6 +182,7 @@ class TestRuleProcessor:
         mock_rule.generate_fix.return_value = mock_fix
         
         processor.rule_registry.get_rules_in_dependency_order.return_value = [mock_rule]
+        processor.rule_registry.get_rule_for_violation.return_value = mock_rule
         
         # Process files (not dry run)
         result = processor.process_files([test_file], dry_run=False)
@@ -220,12 +262,32 @@ class TestRuleProcessor:
         )
         
         # Mock rules
-        mock_rules = [
-            Mock(name="EntityReference", fix_type=Mock(value="fully_deterministic")),
-            Mock(name="ContentType", fix_type=Mock(value="partially_deterministic")),
-            Mock(name="TaskSection", fix_type=Mock(value="non_deterministic"))
+        mock_entity_rule = Mock()
+        mock_entity_rule.name = "EntityReference"
+        mock_entity_rule.fix_type = FixType.FULLY_DETERMINISTIC
+        
+        mock_content_rule = Mock()
+        mock_content_rule.name = "ContentType"
+        mock_content_rule.fix_type = FixType.PARTIALLY_DETERMINISTIC
+        
+        mock_task_rule = Mock()
+        mock_task_rule.name = "TaskSection"
+        mock_task_rule.fix_type = FixType.NON_DETERMINISTIC
+        
+        processor.rule_registry.get_all_rules.return_value = [
+            mock_entity_rule, mock_content_rule, mock_task_rule
         ]
-        processor.rule_registry.get_all_rules.return_value = mock_rules
+        
+        # Mock get_rule_for_violation to return appropriate rules
+        def get_rule_for_violation(violation):
+            if violation.rule_name == "EntityReference":
+                return mock_entity_rule
+            elif violation.rule_name == "ContentType":
+                return mock_content_rule
+            else:
+                return None
+                
+        processor.rule_registry.get_rule_for_violation.side_effect = get_rule_for_violation
         
         # Display summary
         processor.display_summary(result)

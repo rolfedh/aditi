@@ -7,6 +7,7 @@ import pytest
 from typer.testing import CliRunner
 
 from aditi.cli import app
+from aditi.config import AditiConfig
 
 
 class TestCLIIntegration:
@@ -33,7 +34,7 @@ class TestCLIIntegration:
         assert result.exit_code == 0
         assert "aditi version 0.1.0" in result.stdout
     
-    @patch("aditi.commands.init.init_command")
+    @patch("aditi.cli.init_command")
     def test_init_command(self, mock_init, runner):
         """Test init command invocation."""
         # Mock init_command to not actually run Vale operations
@@ -42,35 +43,48 @@ class TestCLIIntegration:
         assert result.exit_code == 0
         mock_init.assert_called_once_with(None, False, False)
     
-    def test_check_placeholder(self, runner):
-        """Test check command placeholder."""
+    @patch("aditi.config.ConfigManager")
+    def test_check_placeholder(self, mock_cm, runner):
+        """Test check command without configuration."""
+        # Mock empty configuration
+        mock_cm.return_value.load_config.return_value = AditiConfig()
         result = runner.invoke(app, ["check"])
         assert result.exit_code == 1
-        assert "not yet implemented" in result.stdout
+        assert "No paths configured" in result.stdout
     
-    def test_fix_placeholder(self, runner):
-        """Test fix command placeholder."""
+    @patch("aditi.config.ConfigManager")
+    def test_fix_placeholder(self, mock_cm, runner):
+        """Test fix command without configuration."""
+        # Mock empty configuration
+        mock_cm.return_value.load_config.return_value = AditiConfig()
         result = runner.invoke(app, ["fix"])
         assert result.exit_code == 1
-        assert "not yet implemented" in result.stdout
+        assert "No paths configured" in result.stdout
     
-    def test_journey_placeholder(self, runner):
-        """Test journey command placeholder."""
+    @patch("questionary.confirm")
+    @patch("aditi.commands.journey.ConfigManager")
+    def test_journey_placeholder(self, mock_cm, mock_confirm, runner):
+        """Test journey command exit on first prompt."""
+        # Mock user saying no to first prompt
+        mock_confirm.return_value.ask.return_value = False
         result = runner.invoke(app, ["journey"])
         assert result.exit_code == 1
-        assert "not yet implemented" in result.stdout
     
-    def test_verbose_option(self, runner):
+    @patch("aditi.config.ConfigManager")
+    def test_verbose_option(self, mock_cm, runner):
         """Test verbose option."""
+        # Mock empty configuration
+        mock_cm.return_value.load_config.return_value = AditiConfig()
+        
         result = runner.invoke(app, ["check", "--verbose"])
-        assert result.exit_code == 1  # Still fails, but should accept the option
+        assert result.exit_code == 1  # Still fails due to no paths, but accepts the option
         
         result = runner.invoke(app, ["fix", "-v"])
-        assert result.exit_code == 1  # Still fails, but should accept the option
+        assert result.exit_code == 1  # Still fails due to no paths, but accepts the option
     
     def test_no_args(self, runner):
         """Test running without arguments shows help."""
         result = runner.invoke(app, [])
-        # Typer returns exit code 2 for missing command when no_args_is_help=True
-        assert result.exit_code == 2
-        assert "Usage:" in result.stdout
+        # Typer returns exit code 0 when showing help
+        assert result.exit_code == 0
+        assert "Usage:" in result.stdout or "AsciiDoc DITA Integration" in result.stdout

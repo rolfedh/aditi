@@ -46,7 +46,7 @@ class TestGitHelpers:
         
         # Test with a non-git directory
         non_git_dir = temp_git_repo.parent / "non_git"
-        non_git_dir.mkdir()
+        non_git_dir.mkdir(exist_ok=True)
         assert not is_git_repository(non_git_dir)
     
     def test_get_current_branch(self, temp_git_repo: Path):
@@ -57,7 +57,7 @@ class TestGitHelpers:
         
         # Not in git repo
         non_git_dir = temp_git_repo.parent / "non_git2"
-        non_git_dir.mkdir()
+        non_git_dir.mkdir(exist_ok=True)
         assert get_current_branch(non_git_dir) is None
     
     def test_get_default_branch(self, temp_git_repo: Path):

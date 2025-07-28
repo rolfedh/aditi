@@ -98,12 +98,14 @@ class TestCheckCommand:
         empty_dir.mkdir()
         
         with patch('aditi.commands.check.ConfigManager') as mock_cm:
+            # Update mock config to allow the empty directory
+            mock_config.allowed_paths = [empty_dir]
             mock_cm.return_value.load_config.return_value = mock_config
             
             result = runner.invoke(app, ["check", str(empty_dir)])
             
             assert result.exit_code == 0
-            assert "No .adoc files found" in result.output
+            assert "No .adoc files found to check" in result.output
     
     def test_check_command_with_rule_filter(self, runner, test_files, mock_config):
         """Test check command with rule filter."""
@@ -176,8 +178,13 @@ class TestCheckCommand:
             mock_processor.rule_registry.get_all_rules.return_value = []
             mock_rp.return_value = mock_processor
             
+            # Ensure the vale container mock has ensure_image_exists method
+            mock_vale.ensure_image_exists.return_value = None
+            
             # Run command in verbose mode
-            result = runner.invoke(app, ["check", str(test_files), "--verbose"])
+            # Patch Path.cwd() to return the test directory parent
+            with patch('pathlib.Path.cwd', return_value=test_files.parent):
+                result = runner.invoke(app, ["check", str(test_files), "--verbose"])
             
             assert result.exit_code == 0
             assert "Detailed Analysis Results" in result.output
@@ -223,11 +230,12 @@ class TestCheckCommand:
             # Setup mocks
             mock_cm.return_value.load_config.return_value = mock_config
             mock_vale = Mock()
-            mock_vale.setup.return_value = False
+            # Make ensure_image_exists raise an exception
+            mock_vale.ensure_image_exists.side_effect = Exception("Failed to initialize Vale")
             mock_vc.return_value = mock_vale
             
             # Run command
             result = runner.invoke(app, ["check", str(test_files)])
             
             assert result.exit_code == 1
-            assert "Failed to setup Vale container" in result.output
+            assert "Failed to initialize Vale" in result.output
