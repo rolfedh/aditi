@@ -30,7 +30,7 @@ IMPORTANT:
 - cd to the root directory of your repository before running aditi commands.
 - Create a working branch with the latest changes in it.
 
- Usage: aditi [OPTION]|| [COMMAND]
+ Usage: aditi [OPTION]||[COMMAND]
 
  AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
 
@@ -335,69 +335,10 @@ TaskSection: DITA 1.3 does not allow sections in a task topic. If a section is n
 ```bash
 🎉 Preparation journey complete!
 
-📊 Final Summary:
-  ✓ EntityReference: 23 fixes applied
-  ✓ ContentType: 8 fixes applied
-  ⚠️ TaskSection: 3 marked with TODO comments
-
-📁 Modified files: 12
-💾 All changes saved to your working directory
-
 📋 Preparation Report Generated:
   ~/aditi-data/reports/2025-07-27-preparation-report.md
 
-💡 Next Steps:
-
-1. **Create a pull request with your changes**
-   - Include the preparation report in your PR description
-   - Reference the specific AsciiDocDITA rules addressed
-
-2. **Review and address any issues identified in the PR**
-   - Check for any CI/CD failures
-   - Address reviewer comments
-   - Fix remaining TODO items
-
-3. **Merge the PR once all issues are resolved**
-   - Ensure all tests pass
-   - Get necessary approvals
-   - Complete your team's merge process
-
-📚 Additional Resources:
-  • Review TODO items: Search for "TODO: [Aditi]" in modified files
-  • Run verification: aditi check --strict
-  • View detailed changes: Review the preparation report
-
 Thank you for using Aditi! 🚀
-```
-
-## 6. Subsequent Runs - Incremental Progress
-
-### Checking Progress After Manual Fixes
-
-```bash
-$ aditi check docs/
-
-🔍 Analyzing AsciiDoc files in docs/
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:10
-
-📊 Analysis Results for docs/
-
-✅ EntityReference - No issues found!
-✅ ContentType - No issues found!
-
-🔵 TaskSection (3 issues)
-  docs/procedures/install.adoc:34   Task sections require numbered lists
-  docs/procedures/config.adoc:22    Task sections require numbered lists
-  docs/procedures/deploy.adoc:45    Task sections require numbered lists
-
-📈 Summary:
-  Files processed: 12
-  Total issues: 3 (down from 34!)
-  Manual intervention required: 3
-
-🎯 Progress: 91% of issues resolved!
-
-Great work! Only manual fixes remain.
 ```
 
 ## Key Features Demonstrated

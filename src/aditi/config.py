@@ -160,12 +160,43 @@ class AditiConfig(BaseModel):
         None,
         description="Custom path for Vale styles (defaults to ~/.config/aditi/styles)"
     )
+    allowed_paths: List[Path] = Field(
+        default_factory=list,
+        description="List of paths allowed for checking"
+    )
 
     def get_current_repository(self) -> Optional[RepositoryConfig]:
         """Get the current repository configuration."""
         if self.current_repository and self.current_repository in self.repositories:
             return self.repositories[self.current_repository]
         return None
+    
+    def is_path_allowed(self, path: Path) -> bool:
+        """Check if a path is allowed for processing.
+        
+        Args:
+            path: Path to check
+            
+        Returns:
+            True if path is allowed or no restrictions are set
+        """
+        # If no allowed paths are configured, allow all paths
+        if not self.allowed_paths:
+            return True
+            
+        # Convert to absolute path for comparison
+        abs_path = path.resolve()
+        
+        # Check if path is under any allowed path
+        for allowed_path in self.allowed_paths:
+            allowed_abs = allowed_path.resolve()
+            try:
+                abs_path.relative_to(allowed_abs)
+                return True
+            except ValueError:
+                continue
+                
+        return False
 
     def add_repository(
         self,

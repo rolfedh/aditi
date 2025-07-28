@@ -1,0 +1,21 @@
+// :_mod-docs-content-type: PROCEDURE
+
+= Setting Up the Application
+
+This procedure describes how to set up the application.
+
+== Prerequisites
+
+* System requirements met
+* Admin access available
+
+== Procedure
+
+. Open the configuration file
+. Update the settings
+. Save the changes
+. Restart the application
+
+== Verification
+
+Check that the application is running correctly.

@@ -194,6 +194,52 @@ class ValeContainer:
             logger.error(f"Vale command failed: {e.stderr}")
             raise
 
+    def run_vale(self, args: list[str]) -> str:
+        """Run Vale with specified arguments.
+        
+        Args:
+            args: Command line arguments for Vale
+            
+        Returns:
+            Vale output as string
+        """
+        # Find project root (current directory)
+        project_root = Path.cwd()
+        
+        # Ensure configuration exists
+        if not (project_root / ".vale.ini").exists():
+            raise FileNotFoundError(
+                f"No .vale.ini found in {project_root}. "
+                "Run 'aditi init' first to set up Vale configuration."
+            )
+        
+        # Run Vale in container
+        cmd = [
+            self.runtime, "run", "--rm",
+            "-v", f"{project_root.absolute()}:/docs",
+            "-w", "/docs",
+            self.VALE_IMAGE,
+        ] + args
+        
+        logger.debug(f"Running Vale command: {' '.join(cmd)}")
+        
+        try:
+            result = subprocess.run(
+                cmd,
+                check=False,  # Vale returns non-zero on violations
+                capture_output=True,
+                text=True
+            )
+            
+            if result.stderr:
+                logger.warning(f"Vale stderr: {result.stderr}")
+                
+            return result.stdout
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Vale command failed: {e.stderr}")
+            raise
+
     def cleanup(self) -> None:
         """Clean up any running containers."""
         try:

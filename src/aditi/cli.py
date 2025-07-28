@@ -9,12 +9,16 @@ import typer
 from rich.console import Console
 from rich.logging import RichHandler
 
-from aditi.commands import init_command
+from aditi.commands import init_command, check_command
 
 console = Console()
 app = typer.Typer(
     name="aditi",
-    help="AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA",
+    help="""AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
+
+IMPORTANT:
+- cd to the root directory of your repository before running aditi commands.
+- Create a working branch with the latest changes in it.""",
     no_args_is_help=True,
     rich_markup_mode="rich",
     add_completion=True,
@@ -90,9 +94,19 @@ def init(
 
 @app.command()
 def check(
-    path: Optional[Path] = typer.Argument(
+    paths: Optional[list[Path]] = typer.Argument(
         None,
-        help="Path to check (file or directory). Defaults to current directory.",
+        help="Paths to check (files or directories). If not specified, checks configured directories.",
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        readable=True,
+    ),
+    rule: Optional[str] = typer.Option(
+        None,
+        "--rule",
+        "-r",
+        help="Check only specific rule (e.g., EntityReference)",
     ),
     verbose: bool = verbose_option,
 ) -> None:
@@ -102,12 +116,7 @@ def check(
     to be addressed before migration to DITA.
     """
     setup_logging(verbose)
-    console.print("[yellow]The 'check' command is not yet implemented.[/yellow]")
-    console.print(
-        "This command will analyze your AsciiDoc files and report "
-        "DITA compatibility issues."
-    )
-    raise typer.Exit(1)
+    check_command(paths, rule, verbose)
 
 
 @app.command()
