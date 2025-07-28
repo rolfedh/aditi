@@ -6,7 +6,14 @@ permalink: /design/phase-2-mockup/
 
 # Aditi CLI User Interaction Mockup
 
-This document demonstrates typical user interactions with the Aditi CLI, showing the complete workflow from initial setup through successful preparation of AsciiDoc files to DITA-compatible format.
+This document demonstrates typical user interactions with the Aditi CLI, showing the complete workflow:
+- initial setup
+- The interactions show user-CLI interaction patterns for three types of issues: those who have deterministic, partially-deterministic, and non-deterministic fixes.
+- It presents the setup and rules in the correct sequence
+  - Configuration and prerequisite rules first
+  - "Error"-level rules in the first stage
+  - "Warning"-level rules in the second stage
+  - "Suggestion"-level rules in the final stage
 
 ## Scenario: Technical Writer Preparing Documentation
 
@@ -19,24 +26,36 @@ Sarah is a technical writer with a repository containing 50+ AsciiDoc files that
 ```bash
 $ aditi --help
 
- Usage: aditi [OPTIONS] COMMAND [ARGS]...
+IMPORTANT:
+- cd to the root directory of your repository before running aditi commands.
+- Create a working branch with the latest changes in it.
+
+ Usage: aditi [OPTION]|| [COMMAND]
 
  AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
 
 ╭─ Options ────────────────────────────────────────────────────────────────────╮
 │ --version             -V        Show version and exit                        │
-│ --verbose             -v        Enable verbose output                        │
 │ --help                          Show this message and exit.                  │
 ╰──────────────────────────────────────────────────────────────────────────────╯
 ╭─ Commands ───────────────────────────────────────────────────────────────────╮
 │ init      Initialize Vale configuration for AsciiDocDITA rules.              │
+│ journey   Start an interactive journey to migrate AsciiDoc files to DITA.    │
 │ check     Check AsciiDoc files for DITA compatibility issues.                │
 │ fix       Fix deterministic DITA compatibility issues in AsciiDoc files.     │
-│ journey   Start an interactive journey to migrate AsciiDoc files to DITA.    │
 ╰──────────────────────────────────────────────────────────────────────────────╯
+
+Examples:
 
 $ aditi --version
 aditi version 0.1.0
+
+$ aditi init
+
+$ aditi journey
+
+$ aditi check
+
 ```
 
 ### Initialize Vale Configuration
@@ -80,35 +99,36 @@ $ aditi check docs/
 📊 Analysis Results for docs/
 
 🟡 ContentType (8 issues)
-  docs/procedures/install.adoc:1    Missing content type attribute (detected: PROCEDURE)
-  docs/concepts/overview.adoc:1     Missing content type attribute (detected: CONCEPT)
-  docs/reference/api.adoc:1         Missing content type attribute (detected: REFERENCE)
+Fix: Replace missing content type attributes
+  docs/procedures/install.adoc:1
+  docs/concepts/overview.adoc:1
+  docs/reference/api.adoc:1
   ... and 5 more
 
 🔴 EntityReference (23 issues)
-  docs/concepts/overview.adoc:15    Replace '&nbsp;' with '{nbsp}'
-  docs/concepts/overview.adoc:23    Replace '&mdash;' with '{mdash}'
-  docs/concepts/overview.adoc:45    Replace '&copy;' with '{copy}'
-  docs/procedures/install.adoc:12   Replace '&trade;' with '{trade}'
+Fix: Replace missing content type attributes or insert `TBD` for reviewer.
+  docs/concepts/overview.adoc:15
+  docs/concepts/overview.adoc:23
+  docs/concepts/overview.adoc:45
+  docs/procedures/install.adoc:12
   ... and 19 more
 
 🔵 TaskSection (3 issues)
-  docs/procedures/install.adoc:34   Task sections require numbered lists
-  docs/procedures/config.adoc:22    Task sections require numbered lists
-  docs/procedures/deploy.adoc:45    Task sections require numbered lists
+Fix: Comment task sections that require numbered lists for reviewer.
+  docs/procedures/install.adoc:34
+  docs/procedures/config.adoc:22
+  docs/procedures/deploy.adoc:45
 
 📈 Summary:
   Files processed: 12
   Total issues: 34
-  Fully deterministic fixes: 23 (can be auto-fixed)
-  Partially deterministic fixes: 8 (require review)
+  Can be auto-fixed: 23 fully deterministic issues
+  Most can be auto-fixed: 8 partially deterministic issues
   Manual intervention required: 3
 
 ✨ Good news! 68% of issues can be fixed automatically.
 
-Next steps:
-- Run 'aditi fix' to apply automatic fixes
-- Run 'aditi journey' for guided workflow
+Next step: Run 'aditi journey' for guided workflow
 ```
 
 ## 3. Guided Journey - Interactive Workflow
@@ -122,15 +142,17 @@ $ aditi journey
 
 This interactive workflow will help you:
   ✓ Configure Aditi for your repository
-  ✓ Apply fixes systematically
-  ✓ Review changes
-  ✓ Prepare files for DITA migration
+  ✓ Automatically fix or flag issues for you
+  ✓ Prompt you to review automatic fixes
+  ✓ Prompt you to fix flagged issues
 
 📁 Current directory: /home/sarah/product-docs
 
-? Is this the directory you want to work with? (Y/n) Y
+? Is this the root directory of your repostory? (Y/n) Y
 
-? Would you like to configure any subdirectory permissions? (y/N) y
+[If user enters n, tell them to "cd to the root directory of the repository and rerun the 'aditi journey' command". Then exit Aditi.]
+
+? Customize subdirectory access? (y/N) y
 
 🔍 Scanning for AsciiDoc files...
 
@@ -164,63 +186,53 @@ Selected directories:
 ✓ Great! Let's start.
 ```
 
+Question: Can Clause Code design Aditi to use the path information in ~/aditi-data/config.json to select or exclude specific directories.
+
+Also, Aditi must ignore symlinks.
+
 ## 4. Applying Fixes - Rule by Rule
 
 ### ContentType Rule (Partially Deterministic)
 
-Aditi starts with ContentType rule because having the content type attribute correctly defined is a prerequisite for type-specific rules, such as the rules that have "Task" in their names.
+Aditi starts with the ContentType rule. Having the content type attributes correctly defined is a prerequisite for type-specific rules to function correctly For example, rules that have "Task" are only valid for files that have ':_mod-docs-content-type: TASK'.
 
 ```bash
 🔧 Processing ContentType issues (8 found)
 
 ContentType: Without a clear content type definition, the Vale style cannot reliably report type-specific issues for modules such as TaskSection,  TaskExample, TaskDuplicate, TaskStep, and TaskTitle.
 
-Add the correct :_mod-docs-content-type: definition at the top of the file.
-
 These files need valid content type attributes and values:
 
-1. docs/procedures/proc_install.adoc
-   Detected type: PROCEDURE (based on filename prefix)
+  docs/procedures/install.adoc:1
+  docs/concepts/overview.adoc:1
+  docs/reference/api.adoc:1
+  [show the full list of files]
 
-   ? Apply detected content type?
-     ❯ Yes, add ':_mod-docs-content-type: PROCEDURE'
-       No, I'll set it manually
-       Skip this file
+Fix: Replace missing content type attributes
 
-# 2. docs/concepts/conc_overview.adoc
-#    Detected type: CONCEPT (based on filename prefix)
+? Auto-fix, flag, or skip? (A/f/s) A
 
-#    ? Apply detected content type?
-#      ❯ Yes, add ':_mod-docs-content-type: CONCEPT'
-#        No, let me choose:
-#          ○ ASSEMBLY
-#          ○ CONCEPT
-#          ○ PROCEDURE
-#          ○ REFERENCE
-#          ○ SNIPPET
-#        Skip this file
+[Y = Auto-fix adds the attribute, adds the detected value, and positions the attribute 2-3 lines above the first id and title. If the attribute value cannot be autodetected (based on the commented out attribute, filename prefix, or obsolete attribute values) then insert `TBD` as a placeholder value. Replace commented-out or obsolete attributes with the new one.]
+[f = Flags the issue by inserting a comment that contains the Vale AsciiDocDITA-generated message for the ContentType rule.]
+[s = Skips to the end of the interaction for the ContentType rule.]
 
-[... continues for each file ...]
-
-⠏ Applying content type fixes...
+⠏ Applying ContentType fixes...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:02
 
-✓ Successfully applied 8 ContentType fixes
-  • 6 automatic detections accepted
-  • 2 manually specified
+✓ Applied 8 ContentType fixes.
+  • docs/concepts/overview.adoc (1 fix)
+  • docs/procedures/install.adoc (1 fix)
+  • docs/reference/api.adoc (1 fix)
+  • ...
+  [show the full list of files]
 
-? Review these changes? (Y/n) Y
+💡 To do:
+- Review and fix all changes before continuing.
+- Search for `TBD` and replace it with valid attribute values.
+- Optional: Commit and push your changes to a pull request.
+- Ensure these changes are available in the current working branch before proceding.
 
-[Shows diff output with content type additions]
-
-🟡 ContentType (1 issues remaining)
-  docs/procedures/uninstall.adoc:1    Missing content type attribute (detected: PROCEDURE)
-
-✓ Content type attributes added successfully.
-
-💡 Workflow Tip:
-- Fix all issues before continuing.
-- Review the auto-detected types for accuracy.
+For more information, see <URL>
 
 ? Continue with next rule? (Y/n) Y
 ```
@@ -230,90 +242,91 @@ These files need valid content type attributes and values:
 ```bash
 🔧 Processing EntityReference issues (23 found)
 
-These issues can be fixed automatically:
-  • &nbsp; → {nbsp}
-  • &mdash; → {mdash}
-  • &copy; → {copy}
-  • &trade; → {trade}
+EntityReference: DITA 1.3 supports five character entity references defined in the XML standard: &amp;, &lt;, &gt;, &apos;, and &quot;. Replace any other character entity references with an appropriate built-in AsciiDoc attribute.
 
-? Apply all EntityReference fixes? (Y/n) Y
+These files have this issue:
+• docs/procedures/install.adoc:1
+• docs/concepts/overview.adoc:1
+• docs/reference/api.adoc:1
+  [show the full list of files]
 
-⠏ Applying fixes...
+Fix: Replace with valid entity references
+
+? Auto-fix, flag, or skip? (A/f/s) A
+
+⠏ Applying changes...
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:03
 
-✓ Successfully applied 23 EntityReference fixes
-
-📝 Files modified:
+✓ Applied 8 EntityReference fixes.
   • docs/concepts/overview.adoc (3 fixes)
   • docs/procedures/install.adoc (1 fix)
   • docs/reference/api.adoc (5 fixes)
-  • ... and 6 more files
+  • ...
+  [show the full list of files]
 
-? Review the changes? (Y/n) Y
-
-[Shows diff output with color highlighting]
-
-📝 Summary of changes:
-  • Replaced HTML entities with AsciiDoc equivalents
-  • Modified 9 files with 23 total replacements
-  • All changes are DITA-compatible
-
-✓ Changes saved to your working directory.
-
-💡 Workflow Tip:
-  These changes are ready to be committed to your branch.
-  Review them carefully before proceeding.
+💡 To do:
+- Review and fix all changes before continuing.
+- Ensure these changes are available in the current working branch before proceding.
+- Optional: Commit and push your changes to a pull request.
 
 ? Continue with next rule? (Y/n) Y
 ```
 
-### ExampleBlock Rule (Fully Deterministic)
-
-TBD
-
-### NestedSection
-
-TBD
-
-### TaskExample
-
-TBD
-
-### TaskSection Rule (Non-Deterministic)
+### ExampleBlock rule (Non-deterministic pattern)
 
 ```bash
-🔧 Processing TaskSection issues (3 found)
+🔧 Processing ExampleBlock issues (23 found)
 
-These issues require manual intervention:
+ExampleBlock: DITA 1.3 allows the <example> element to appear only within the main body of the topic. Do not use example blocks in sections, within other blocks, or as part of lists.
 
-📄 docs/procedures/install.adoc:34
-   ⚠️  Task sections must use numbered lists
+To fix this issue, you need to review and edit each file.
+Follow the guidance provided in <URL>
 
-   Current:
-   • Download the installer
-   • Run the setup wizard
-   • Configure settings
+These files have this issue:
+• docs/procedures/install.adoc:1
+• docs/concepts/overview.adoc:1
+• docs/reference/api.adoc:1
+  [show the full list of files]
 
-   Should be:
-   1. Download the installer
-   2. Run the setup wizard
-   3. Configure settings
+Fix: Flag the issue for user review
 
-? How would you like to proceed?
-  ❯ Open file in editor
-    Mark with TODO comment
-    Skip for now
-    View more context
+? Flag or skip? (F/s) F
 
-[If "Mark with TODO comment" selected:]
+⠏ Applying changes...
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ 100% 0:00:03
 
-✓ Added TODO comment to docs/procedures/install.adoc:34
-  // TODO: [Aditi] Convert to numbered list for DITA compatibility
+✓ Applied 8 ExampleBlock flags.
+  • docs/concepts/overview.adoc (3 fixes)
+  • docs/procedures/install.adoc (1 fix)
+  • docs/reference/api.adoc (5 fixes)
+  • ...
+  [show the full list of files]
 
-? Continue with next issue? (Y/n) Y
+💡 To do:
+- Review and fix all changes before continuing.
+- Ensure these changes are available in the current working branch before proceding.
+- Optional: Commit and push your changes to a pull request.
 
-[... continues for remaining issues ...]
+? Continue with next rule? (Y/n) Y
 ```
+
+### NestedSection (Non-deterministic pattern)
+
+Repeat the non-deterministic CLI pattern for NestedSection.
+
+NestedSection: DITA 1.3 allows the <section> element to appear only within the main body of the topic. If a level 2 section is needed, move it to a separate file.
+
+### TaskExample rule (Non-deterministic pattern)
+
+Repeat the non-deterministic CLI pattern for TaskExample.
+
+TaskExample: DITA 1.3 allows only one <example> element in a task topic. If multiple examples are needed, combine them in a single example block.
+
+### TaskSection rule (Non-deterministic pattern)
+
+Repeat the non-deterministic CLI pattern for TaskSection.
+
+TaskSection: DITA 1.3 does not allow sections in a task topic. If a section is needed, move it to a separate file.
 
 ## 5. Completion and Next Steps
 
