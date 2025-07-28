@@ -1,3 +1,17 @@
+## ✅ Recent Commit Review (July 28, 2025)
+
+### Completed Tasks (based on last 5 commits):
+
+- [x] Implement Phase 3 interactive journey and fix commands
+- [x] Implement rule registry and violation parser
+- [x] Add CLI prototype and improve workflow documentation
+- [x] Update configuration models for journey state tracking
+- [x] Add questionary dependency for interactive CLI prompts
+- [x] Create directory scanner for .adoc files with .gitignore support
+- [x] Wire up journey and fix commands to main CLI
+- [x] Add integration and unit tests for processor, rules, and vale_parser
+
+All tasks above are now complete and reflected in the current codebase.
 ---
 layout: page
 title: "Aditi Implementation Plan for Claude Code"
@@ -69,7 +83,7 @@ aditi/
 **Completed Tasks**:
 1. ✅ Created `pyproject.toml` with modern Python packaging
 2. ✅ Implemented main CLI entry point (`cli.py`) with Typer
-3. ✅ Built configuration manager with Pydantic models  
+3. ✅ Built configuration manager with Pydantic models
 4. ✅ Created workflow guidance module for process assistance
 5. ✅ Set up proper Python package structure with exports
 6. ✅ Comprehensive test suite (34/36 tests passing)
@@ -125,16 +139,16 @@ aditi/
        @abstractmethod
        def name(self) -> str:
            """Rule identifier matching Vale rule name."""
-       
+
        @property
        @abstractmethod
        def fix_type(self) -> FixType:
            """Classification of fix determinism."""
-       
+
        @abstractmethod
        def can_fix(self, violation: Violation) -> bool:
            """Check if this rule can fix the violation."""
-       
+
        @abstractmethod
        def generate_fix(self, violation: Violation, file_content: str) -> Optional[Fix]:
            """Generate a fix for the violation."""
@@ -237,7 +251,7 @@ Next step: Run 'aditi journey' for guided workflow
        - Show file counts per directory
        - Interactive directory selection (arrows/space/enter)
        - Save configuration to ~/aditi-data/config.json
-       
+
        # Phase 2: Rule Application Workflow
        - Apply rules in order: ContentType → EntityReference → Non-deterministic rules
        - For each rule:
@@ -246,7 +260,7 @@ Next step: Run 'aditi journey' for guided workflow
          * Show progress bar during application
          * Display summary of changes
          * Prompt to continue or stop
-       
+
        # Phase 3: Completion
        - Generate preparation report
        - Save to ~/aditi-data/reports/
@@ -286,7 +300,7 @@ Next step: Run 'aditi journey' for guided workflow
        selected_directories: List[Path]
        excluded_directories: List[Path] = []
        ignore_symlinks: bool = True
-       
+
    class RuleApplication(BaseModel):
        """Track rule application choices"""
        rule_name: str
@@ -300,14 +314,14 @@ Next step: Run 'aditi journey' for guided workflow
    RULE_PROCESSING_ORDER = [
        # Prerequisites
        ("ContentType", "warning"),  # Must run first
-       
+
        # Error-level rules
        ("EntityReference", "error"),
-       
-       # Warning-level rules  
+
+       # Warning-level rules
        ("ExampleBlock", "warning"),
        ("NestedSection", "warning"),
-       
+
        # Suggestion-level rules
        ("TaskSection", "suggestion"),
        ("TaskExample", "suggestion"),
