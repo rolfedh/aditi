@@ -63,7 +63,7 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed from the ground up
 (WIP - not yet available)
 
 ```bash
-pip install aditi
+pip install --upgrade aditi
 aditi journey
 ```
 

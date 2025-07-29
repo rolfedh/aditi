@@ -19,7 +19,7 @@ Aditi is a CLI tool that analyzes AsciiDoc files using Vale with AsciiDocDITA ru
 ## Installation
 
 ```bash
-pip install aditi
+pip install --upgrade aditi
 ```
 
 ## Basic Workflow
@@ -93,7 +93,7 @@ aditi fix --rule EntityReference
 
 ```bash
 # 1. Install and initialize
-pip install aditi
+pip install --upgrade aditi
 cd my-asciidoc-project
 aditi init
 

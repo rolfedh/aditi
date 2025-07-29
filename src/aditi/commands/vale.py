@@ -17,7 +17,7 @@ console = Console()
 
 def vale_command(
     paths: List[Path] = typer.Argument(
-        None,
+        default_factory=list,
         help="Paths to check (files or directories). If not specified, checks configured directories.",
         exists=True,
         file_okay=True,
@@ -51,7 +51,13 @@ def vale_command(
         if not config.allowed_paths:
             console.print("[yellow]No paths configured. Run 'aditi journey' to configure paths.[/yellow]")
             raise typer.Exit(1)
-        paths_to_check = config.allowed_paths
+        # Convert allowed_paths to Path objects, handling both string and Path inputs
+        paths_to_check = []
+        for p in config.allowed_paths:
+            if isinstance(p, Path):
+                paths_to_check.append(p)
+            else:
+                paths_to_check.append(Path(p))
     else:
         # Validate paths against configuration
         paths_to_check = []
@@ -107,7 +113,7 @@ def vale_command(
         # Run Vale with specified output format
         if output_format.upper() == "JSON":
             # Use JSON output and pretty print if requested
-            output = vale_container.run_vale(["--output=JSON"] + path_args)
+            output = vale_container.run_vale_raw(["--output=JSON"] + path_args)
             
             if pretty:
                 try:
@@ -123,7 +129,7 @@ def vale_command(
                 console.print(output)
         else:
             # Use specified format directly
-            output = vale_container.run_vale([f"--output={output_format}"] + path_args)
+            output = vale_container.run_vale_raw([f"--output={output_format}"] + path_args)
             console.print(output)
             
     except Exception as e:
@@ -142,7 +148,7 @@ def show_vale_version() -> None:
         vale_container.ensure_image_exists()
         
         # Get Vale version
-        version_output = vale_container.run_vale(["--version"])
+        version_output = vale_container.run_vale_raw(["--version"])
         console.print(f"Vale version: {version_output.strip()}")
         
     except Exception as e:
@@ -163,7 +169,7 @@ def list_vale_styles() -> None:
         
         # Try to list styles (this might not work in container, but we can try)
         try:
-            styles_output = vale_container.run_vale(["ls-config"])
+            styles_output = vale_container.run_vale_raw(["ls-config"])
             console.print(styles_output)
         except Exception:
             console.print("[yellow]Could not list styles directly. Checking configuration...[/yellow]")

@@ -102,7 +102,7 @@ tests/
 
 After implementation, users will:
 
-1. **Install**: `pip install aditi`
+1. **Install**: `pip install --upgrade aditi`
 2. **Initialize**: `aditi init` (downloads Vale, creates config, fetches AsciiDocDITA styles)
 3. **Use**: `aditi check file.adoc` (runs Vale with AsciiDocDITA rules)
 

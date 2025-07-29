@@ -45,7 +45,7 @@ Aditi uses a containerized approach with the official Vale Docker image, ensurin
 
 ```bash
 # Get started in under 5 minutes
-pip install aditi
+pip install --upgrade aditi
 cd your-asciidoc-project
 aditi init
 
@@ -128,7 +128,7 @@ The tool is production-ready today and available via PyPI. Whether you're evalua
 Ready to simplify your AsciiDoc to DITA migration? 
 
 ```bash
-pip install aditi
+pip install --upgrade aditi
 ```
 
 Have feedback or questions? We'd love to hear about your migration experience! Share your thoughts via our [feedback template](https://github.com/rolfedh/aditi/issues/new?template=user_feedback.yml) or start a [discussion](https://github.com/rolfedh/aditi/discussions).

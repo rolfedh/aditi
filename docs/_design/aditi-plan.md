@@ -261,7 +261,7 @@ Primary commands:
 
 ### Installation
 ```bash
-pip install aditi
+pip install --upgrade aditi
 ```
 
 ### Docker Image Management

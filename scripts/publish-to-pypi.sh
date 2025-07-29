@@ -128,7 +128,7 @@ fi
 
 echo ""
 echo "🎉 Success! Aditi has been published to PyPI!"
-echo "Install with: pip install aditi"
+echo "Install with: pip install --upgrade aditi"
 echo ""
 echo "Don't forget to:"
 echo "  1. Create a GitHub release with tag v$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"

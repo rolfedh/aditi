@@ -65,7 +65,7 @@ python3 -m twine upload dist/*
 
 After successful upload:
 
-1. **Verify**: `pip install aditi` (from a clean environment)
+1. **Verify**: `pip install --upgrade aditi` (from a clean environment)
 2. **Create GitHub Release**: Tag `v0.1.0` with the changelog
 3. **Update Version**: Bump to `0.2.0-dev` in pyproject.toml for next release
 
