@@ -211,6 +211,12 @@ docs/
 │   ├── CLAUDE-MD-AUTOMATION.md  # Documentation
 │   ├── Gemfile
 │   ├── QUICKSTART.md  # Documentation
+│   ├── Screenshot from 2025-07-29 09-49-16.png
+│   ├── Screenshot from 2025-07-29 09-50-12.png
+│   ├── Screenshot from 2025-07-29 09-51-01.png
+│   ├── Screenshot from 2025-07-29 09-51-31.png
+│   ├── Screenshot from 2025-07-29 09-52-11.png
+│   ├── Screenshot from 2025-07-29 09-53-39.png
 │   ├── _config.yml  # Jekyll configuration
 │   ├── _data/
     └── recent_commits.yml
@@ -238,6 +244,7 @@ docs/
 │   ├── 2025-07-29-0607-fixing-jekyll-front-matter-standardization.md  # Documentation
 │   ├── 2025-07-29-0638-claude-md-hybrid-automation-system.md  # Documentation
 │   ├── 2025-07-29-0816-introducing-aditi-asciidoc-to-dita-migration-made-easy.md  # Documentation
+│   ├── 2025-07-29-0959-example-workflow.md  # Documentation
     └── post-template.md  # Blog post template
 │   ├── _sass/
 │   ├── custom/
