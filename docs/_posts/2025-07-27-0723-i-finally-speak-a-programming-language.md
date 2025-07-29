@@ -1,4 +1,5 @@
 ---
+layout: post
 title: "I Finally Speak a Programming Language: My Journey into Vibecoding"
 date: 2025-07-27 07:23:48 -0400
 author: Rolfe DH

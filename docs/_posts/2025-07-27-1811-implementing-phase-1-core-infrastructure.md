@@ -1,4 +1,5 @@
 ---
+layout: post
 title: "Implementing Phase 1: Core Infrastructure for Aditi"
 date: 2025-07-27 18:11:57 -0400
 author: Aditi Development Team

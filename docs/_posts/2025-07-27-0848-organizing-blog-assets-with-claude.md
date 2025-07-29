@@ -1,4 +1,5 @@
 ---
+layout: post
 title: "Behind the Scenes: How Claude Code Organized Blog Assets from a Simple Request"
 date: 2025-07-27 08:48:58 -0400
 author: Rolfe DH

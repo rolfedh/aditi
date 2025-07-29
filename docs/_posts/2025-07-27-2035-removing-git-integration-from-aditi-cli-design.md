@@ -2,10 +2,10 @@
 layout: post
 title: "Removing Git Integration from Aditi CLI Design"
 date: 2025-07-27 20:35:54 -0400
-categories: [development, design]
-tags: [architecture, git, cli, workflow]
 author: Development Team
+tags: [architecture, git, cli, workflow, design]
 summary: "Major design change: Aditi will provide high-level workflow guidance instead of prescriptive git commands."
+---
 ---
 
 # Removing Git Integration from Aditi CLI Design

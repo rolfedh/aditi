@@ -2,7 +2,9 @@
 layout: post
 title: "Jekyll Theme Comparison: Minima vs Just the Docs"
 date: 2025-07-27 08:45:19 -0400
-categories: documentation jekyll
+author: Aditi Development Team
+tags: [jekyll, themes, documentation, minima, just-the-docs]
+summary: "Comparing Jekyll themes for the Aditi documentation site - evaluating Minima vs Just the Docs."
 ---
 
 # Jekyll Theme Comparison: Minima vs Just the Docs
