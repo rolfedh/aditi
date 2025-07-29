@@ -116,6 +116,16 @@ def init(
         "--docker",
         help="Use Docker instead of Podman"
     ),
+    list_backups: bool = typer.Option(
+        False,
+        "--list-backups",
+        help="List all available Vale configuration backups"
+    ),
+    restore_original: bool = typer.Option(
+        False,
+        "--restore-original",
+        help="Restore the original Vale configuration from backup"
+    ),
     verbose: bool = verbose_option,
 ) -> None:
     """Initialize Vale configuration for AsciiDocDITA rules.
@@ -126,7 +136,7 @@ def init(
     - Create a .vale.ini configuration file
     """
     setup_logging(verbose)
-    init_command(path, force, use_docker)
+    init_command(path, force, use_docker, list_backups, restore_original)
 
 
 @app.command()

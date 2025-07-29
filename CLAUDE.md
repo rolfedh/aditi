@@ -138,6 +138,7 @@ User configuration stored in `~/aditi-data/config.json`:
 ```
 src/aditi/
 │   ├── __init__.py  # Package initialization
+│   ├── __main__.py
 │   ├── cli.py  # Main CLI interface
 │   ├── cli_prototype.py
 │   ├── commands/
@@ -206,6 +207,7 @@ tests/
 │   ├── test_non_deterministic_rules.py  # Test module
 │   ├── test_processor.py  # Test module
 │   ├── test_rules.py  # Test module
+│   ├── test_vale_backup.py  # Test module
     └── test_vale_parser.py  # Test module
 docs/
 │   ├── CLAUDE-MD-AUTOMATION.md  # Documentation

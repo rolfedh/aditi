@@ -41,7 +41,7 @@ class TestCLIIntegration:
         mock_init.return_value = None
         result = runner.invoke(app, ["init"])
         assert result.exit_code == 0
-        mock_init.assert_called_once_with(None, False, False)
+        mock_init.assert_called_once_with(None, False, False, False, False)
     
     @patch("aditi.commands.check.ConfigManager")
     def test_check_placeholder(self, mock_cm, runner):

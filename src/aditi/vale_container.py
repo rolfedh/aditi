@@ -8,10 +8,14 @@ import json
 import logging
 import shutil
 import subprocess
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Dict, Optional, List
+
+from rich.console import Console
 
 logger = logging.getLogger(__name__)
+console = Console()
 
 
 class ValeContainer:
@@ -80,17 +84,22 @@ class ValeContainer:
             self.pull_image()
             self._image_pulled = True
 
-    def init_vale_config(self, project_root: Path) -> None:
+    def init_vale_config(self, project_root: Path, force: bool = False) -> None:
         """Initialize Vale configuration in the project.
 
         Args:
             project_root: Root directory of the project to lint
+            force: Force overwrite existing configuration
         """
         vale_ini = project_root / ".vale.ini"
 
-        if vale_ini.exists():
+        if vale_ini.exists() and not force:
             logger.info(f"Vale configuration already exists at {vale_ini}")
             return
+
+        # Backup existing configuration if forcing
+        if vale_ini.exists() and force:
+            self._backup_vale_config(vale_ini)
 
         # Copy template configuration
         template_path = Path(__file__).parent / "vale" / "vale_config_template.ini"
@@ -99,6 +108,109 @@ class ValeContainer:
 
         # Run vale sync to download styles
         self._run_vale_sync(project_root)
+
+    def _backup_vale_config(self, vale_ini: Path) -> None:
+        """Create backups of existing Vale configuration.
+        
+        Creates:
+        - .vale.ini.original (if it doesn't exist) - permanent backup of pre-Aditi config
+        - .vale.ini.backup.YYYYMMDD_HHMMSS - timestamped backup
+        
+        Args:
+            vale_ini: Path to the .vale.ini file to backup
+        """
+        # Create original backup if it doesn't exist
+        original_backup = vale_ini.parent / ".vale.ini.original"
+        if not original_backup.exists():
+            shutil.copy2(vale_ini, original_backup)
+            logger.info(f"Created permanent backup: {original_backup}")
+            console.print(f"[green]Backing up original .vale.ini to {original_backup.name} (preserved permanently)[/green]")
+        else:
+            console.print(f"[dim]Original configuration preserved in {original_backup.name}[/dim]")
+        
+        # Create timestamped backup
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        timestamped_backup = vale_ini.parent / f".vale.ini.backup.{timestamp}"
+        shutil.copy2(vale_ini, timestamped_backup)
+        logger.info(f"Created timestamped backup: {timestamped_backup}")
+        console.print(f"[green]Creating timestamped backup: {timestamped_backup.name}[/green]")
+        
+        # Clean up old timestamped backups (keep only 5 most recent)
+        self._cleanup_old_backups(vale_ini.parent)
+    
+    def _cleanup_old_backups(self, directory: Path, keep_count: int = 5) -> None:
+        """Remove old timestamped backups, keeping only the most recent ones.
+        
+        Never deletes .vale.ini.original.
+        
+        Args:
+            directory: Directory containing backups
+            keep_count: Number of recent backups to keep
+        """
+        # Find all timestamped backups
+        backups = sorted(directory.glob(".vale.ini.backup.*"), key=lambda p: p.stat().st_mtime, reverse=True)
+        
+        # Remove old backups beyond keep_count
+        for backup in backups[keep_count:]:
+            backup.unlink()
+            logger.info(f"Removed old backup: {backup}")
+    
+    def list_backups(self, project_root: Path) -> List[Path]:
+        """List all available Vale configuration backups.
+        
+        Args:
+            project_root: Project directory
+            
+        Returns:
+            List of backup file paths
+        """
+        backups = []
+        
+        # Check for original backup
+        original = project_root / ".vale.ini.original"
+        if original.exists():
+            backups.append(original)
+        
+        # Find timestamped backups
+        timestamped = sorted(project_root.glob(".vale.ini.backup.*"), 
+                           key=lambda p: p.stat().st_mtime, reverse=True)
+        backups.extend(timestamped)
+        
+        return backups
+    
+    def restore_backup(self, project_root: Path, backup_name: Optional[str] = None) -> bool:
+        """Restore a Vale configuration from backup.
+        
+        Args:
+            project_root: Project directory
+            backup_name: Name of backup to restore (e.g., '.vale.ini.original').
+                        If None, restores the original.
+                        
+        Returns:
+            True if restore was successful
+        """
+        vale_ini = project_root / ".vale.ini"
+        
+        if backup_name is None:
+            backup_name = ".vale.ini.original"
+        
+        backup_path = project_root / backup_name
+        
+        if not backup_path.exists():
+            logger.error(f"Backup not found: {backup_path}")
+            return False
+        
+        # Backup current config before restoring
+        if vale_ini.exists():
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            pre_restore_backup = project_root / f".vale.ini.before_restore.{timestamp}"
+            shutil.copy2(vale_ini, pre_restore_backup)
+            logger.info(f"Backed up current config to: {pre_restore_backup}")
+        
+        # Restore the backup
+        shutil.copy2(backup_path, vale_ini)
+        logger.info(f"Restored Vale configuration from: {backup_path}")
+        return True
 
     def _run_vale_sync(self, project_root: Path) -> None:
         """Run vale sync to download style packages.
