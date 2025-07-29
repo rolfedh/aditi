@@ -58,7 +58,7 @@ IMPORTANT:
 - Create a working branch with the latest changes in it.""",
     no_args_is_help=True,
     rich_markup_mode="rich",
-    add_completion=True,
+    add_completion=False,
     pretty_exceptions_show_locals=False,
 )
 
@@ -262,6 +262,180 @@ def vale(
     """
     setup_logging(verbose)
     vale_command(paths, output_format, pretty)
+
+
+@app.command()
+def completion(
+    shell: Optional[str] = typer.Argument(
+        None,
+        help="Shell type (bash, zsh, fish, powershell). Auto-detected if not specified."
+    ),
+    install: bool = typer.Option(
+        False,
+        "--install",
+        help="Install completion for the current shell"
+    ),
+    show: bool = typer.Option(
+        False,
+        "--show",
+        help="Show completion script for the current shell"
+    ),
+) -> None:
+    """Manage shell completion for Aditi.
+    
+    This command helps you set up shell completion so you can use Tab
+    to complete Aditi commands and options.
+    
+    Examples:
+    - aditi completion --show           # Show completion script
+    - aditi completion --install        # Install completion
+    - aditi completion bash --show      # Show bash completion script
+    - aditi completion zsh --install    # Install zsh completion
+    """
+    import click
+    from typer.main import get_command
+    
+    # Get the click command from typer app
+    click_command = get_command(app)
+    
+    # Check if completion is available
+    completion_available = False
+    get_completion_func = None
+    
+    if hasattr(click_command, 'get_completion_script'):
+        # Older Click/Typer version
+        completion_available = True
+        get_completion_func = click_command.get_completion_script
+    else:
+        try:
+            from click.completion import get_completion_script as click_get_completion
+            completion_available = True
+            get_completion_func = lambda shell, prog: click_get_completion(click_command, {}, shell, prog)
+        except ImportError:
+            pass
+    
+    if not completion_available:
+        console.print("[yellow]Shell completion generation not available in this environment.[/yellow]")
+        console.print("\n[bold]Manual setup instructions:[/bold]")
+        console.print("For bash, add this to your ~/.bashrc or ~/.bash_profile:")
+        console.print(f"[dim]eval \"$(_ADITI_COMPLETE=bash_source aditi)\"[/dim]")
+        console.print("\nFor zsh, add this to your ~/.zshrc:")
+        console.print(f"[dim]eval \"$(_ADITI_COMPLETE=zsh_source aditi)\"[/dim]")
+        console.print("\nFor fish, add this to your ~/.config/fish/config.fish:")
+        console.print(f"[dim]eval (env _ADITI_COMPLETE=fish_source aditi)[/dim]")
+        return
+    
+    # Detect shell if not provided
+    if not shell:
+        import os
+        shell_env = os.environ.get('SHELL', '')
+        if 'bash' in shell_env:
+            shell = 'bash'
+        elif 'zsh' in shell_env:
+            shell = 'zsh'
+        elif 'fish' in shell_env:
+            shell = 'fish'
+        else:
+            shell = 'bash'  # Default fallback
+    
+    # Validate shell
+    valid_shells = ['bash', 'zsh', 'fish', 'powershell']
+    if shell not in valid_shells:
+        console.print(f"[red]Error: Unsupported shell '{shell}'. Supported shells: {', '.join(valid_shells)}[/red]")
+        raise typer.Exit(1)
+    
+    if show:
+        # Show completion script
+        try:
+            if shell == 'bash':
+                script = get_completion_func('bash', 'aditi')
+            elif shell == 'zsh':
+                script = get_completion_func('zsh', '_aditi')
+            elif shell == 'fish':
+                script = get_completion_func('fish', 'aditi')
+            else:
+                console.print(f"[red]Completion script generation not supported for {shell}[/red]")
+                raise typer.Exit(1)
+            
+            console.print(f"[dim]# Completion script for {shell}[/dim]")
+            console.print(script)
+        except Exception as e:
+            console.print(f"[red]Error generating completion script: {e}[/red]")
+            raise typer.Exit(1)
+    
+    elif install:
+        # Install completion
+        console.print(f"[bold]Installing completion for {shell}...[/bold]")
+        
+        try:
+            if shell == 'bash':
+                if hasattr(click_command, 'get_completion_script'):
+                    script = click_command.get_completion_script('bash', 'aditi')
+                else:
+                    script = get_completion_script(click_command, {}, 'bash', 'aditi')
+                completion_file = Path.home() / '.bash_completion'
+                marker = "# Aditi completion"
+                
+                # Read existing file or create empty
+                if completion_file.exists():
+                    content = completion_file.read_text()
+                else:
+                    content = ""
+                
+                # Check if already installed
+                if marker in content:
+                    console.print("[yellow]Completion already installed for bash[/yellow]")
+                else:
+                    # Append completion
+                    with completion_file.open('a') as f:
+                        f.write(f"\n{marker}\n{script}\n")
+                    console.print(f"[green]✓ Completion installed to {completion_file}[/green]")
+                    console.print("[dim]Restart your shell or run: source ~/.bash_completion[/dim]")
+            
+            elif shell == 'zsh':
+                # For zsh, we need to add to a completion directory
+                zsh_completions = Path.home() / '.zsh' / 'completions'
+                zsh_completions.mkdir(parents=True, exist_ok=True)
+                completion_file = zsh_completions / '_aditi'
+                
+                if hasattr(click_command, 'get_completion_script'):
+                    script = click_command.get_completion_script('zsh', '_aditi')
+                else:
+                    script = get_completion_script(click_command, {}, 'zsh', '_aditi')
+                completion_file.write_text(script)
+                
+                console.print(f"[green]✓ Completion installed to {completion_file}[/green]")
+                console.print("[dim]Add this to your ~/.zshrc if not already present:[/dim]")
+                console.print(f"[dim]fpath=(~/.zsh/completions $fpath)[/dim]")
+                console.print("[dim]autoload -U compinit && compinit[/dim]")
+            
+            elif shell == 'fish':
+                # Fish completions go in ~/.config/fish/completions/
+                fish_completions = Path.home() / '.config' / 'fish' / 'completions'
+                fish_completions.mkdir(parents=True, exist_ok=True)
+                completion_file = fish_completions / 'aditi.fish'
+                
+                if hasattr(click_command, 'get_completion_script'):
+                    script = click_command.get_completion_script('fish', 'aditi')
+                else:
+                    script = get_completion_script(click_command, {}, 'fish', 'aditi')
+                completion_file.write_text(script)
+                
+                console.print(f"[green]✓ Completion installed to {completion_file}[/green]")
+                console.print("[dim]Restart your shell or run: source ~/.config/fish/completions/aditi.fish[/dim]")
+            
+            else:
+                console.print(f"[red]Installation not supported for {shell}[/red]")
+                raise typer.Exit(1)
+                
+        except Exception as e:
+            console.print(f"[red]Error installing completion: {e}[/red]")
+            raise typer.Exit(1)
+    
+    else:
+        # Default: show help for completion command
+        console.print("[yellow]Use --show to display completion script or --install to install it.[/yellow]")
+        console.print(f"[dim]Detected shell: {shell}[/dim]")
 
 
 def version_callback(value: bool) -> None:
