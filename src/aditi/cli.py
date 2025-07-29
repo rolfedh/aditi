@@ -12,7 +12,43 @@ from rich.logging import RichHandler
 from aditi.commands import init_command, check_command, journey_command, fix_command
 from aditi.commands.vale import vale_command, show_vale_version, list_vale_styles
 
+try:
+    import tomllib  # Python 3.11+
+except ImportError:
+    try:
+        import tomli as tomllib  # Fallback for older Python
+    except ImportError:
+        tomllib = None
+
 console = Console()
+
+def get_version() -> str:
+    """Get version from pyproject.toml or fallback."""
+    if not tomllib:
+        return "unknown (tomllib not available)"
+    
+    # Look for pyproject.toml in the package directory and up the tree
+    current_dir = Path(__file__).parent
+    for _ in range(5):  # Search up to 5 levels up
+        pyproject_path = current_dir / "pyproject.toml"
+        if pyproject_path.exists():
+            try:
+                with open(pyproject_path, "rb") as f:
+                    data = tomllib.load(f)
+                    return data.get("project", {}).get("version", "unknown")
+            except Exception:
+                break
+        current_dir = current_dir.parent
+        if current_dir == current_dir.parent:  # Reached filesystem root
+            break
+    
+    # Fallback: try to get from package metadata
+    try:
+        from importlib.metadata import version
+        return version("aditi")
+    except Exception:
+        return "unknown"
+
 app = typer.Typer(
     name="aditi",
     help="""AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
@@ -162,6 +198,12 @@ def fix(
 
 @app.command()
 def journey(
+    dry_run: bool = typer.Option(
+        False,
+        "--dry-run",
+        "-d", 
+        help="Show what would be configured and fixed without making changes",
+    ),
     verbose: bool = verbose_option,
 ) -> None:
     """Start an interactive journey to prepare AsciiDoc files for DITA migration.
@@ -171,9 +213,11 @@ def journey(
     - Automatically fix or flag issues for you
     - Prompt you to review automatic fixes
     - Prompt you to fix flagged issues
+    
+    Use --dry-run to preview actions without making changes.
     """
     setup_logging(verbose)
-    journey_command()
+    journey_command(dry_run=dry_run)
 
 
 @app.command()
@@ -213,12 +257,14 @@ def vale(
 def version_callback(value: bool) -> None:
     """Version callback function."""
     if value:
-        console.print("aditi version 0.1.0")
+        version = get_version()
+        console.print(f"aditi version {version}")
         raise typer.Exit()
 
 
-@app.callback()
+@app.callback(invoke_without_command=True)
 def main(
+    ctx: typer.Context,
     version: bool = typer.Option(
         False,
         "--version",
@@ -233,7 +279,10 @@ def main(
     A CLI tool to help prepare AsciiDoc files for migration to DITA
     by identifying and fixing compatibility issues.
     """
-    pass
+    if ctx.invoked_subcommand is None:
+        # No subcommand was invoked, show help
+        console.print(ctx.get_help())
+        raise typer.Exit(2)
 
 
 if __name__ == "__main__":

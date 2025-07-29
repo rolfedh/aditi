@@ -1,0 +1,125 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior in Aditi
+title: "[Bug]: "
+labels: ["bug", "needs-triage"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for reporting a bug! Please provide as much detail as possible to help us reproduce and fix the issue.
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Pre-submission Checklist
+      description: Please verify you've completed these steps before submitting
+      options:
+        - label: I have searched existing issues to avoid duplicates
+          required: true
+        - label: I have tried the latest version of Aditi
+          required: true
+        - label: I have read the [Quick Start Guide](https://github.com/rolfedh/aditi/blob/main/docs/QUICKSTART.md)
+          required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: "Describe what happened and what you expected to happen"
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Provide step-by-step instructions to reproduce the issue
+      placeholder: |
+        1. Run `aditi init`
+        2. Execute `aditi check docs/`
+        3. Observe error message...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What should have happened instead?
+      placeholder: "Describe the expected behavior"
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened? Include error messages, stack traces, etc.
+      placeholder: "Describe what actually happened"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: command
+    attributes:
+      label: Which command is affected?
+      description: Select the Aditi command where the bug occurs
+      options:
+        - aditi init
+        - aditi check
+        - aditi fix
+        - aditi journey
+        - aditi vale
+        - Multiple commands
+        - Other/Unknown
+    validations:
+      required: true
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Information
+      description: Provide details about your system
+      placeholder: |
+        - OS: (e.g., Ubuntu 22.04, macOS 13.1, Windows 11 WSL2)
+        - Python version: (e.g., 3.11.2)
+        - Aditi version: (e.g., 1.0.0)
+        - Container runtime: (Podman/Docker version)
+      render: markdown
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample-files
+    attributes:
+      label: Sample AsciiDoc Files
+      description: If relevant, provide minimal AsciiDoc content that triggers the bug
+      placeholder: |
+        ```adoc
+        = Sample Document
+        
+        Content that triggers the issue...
+        ```
+      render: adoc
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Command Output / Logs
+      description: Include relevant command output, error messages, or log files
+      placeholder: |
+        ```
+        $ aditi check docs/
+        [Error output here]
+        ```
+      render: shell
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information that might be helpful
+      placeholder: "Screenshots, workarounds you've tried, related issues, etc."

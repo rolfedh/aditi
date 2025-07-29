@@ -1,0 +1,148 @@
+name: 💬 User Feedback
+description: Share your experience using Aditi for AsciiDoc to DITA migration
+title: "[Feedback]: "
+labels: ["feedback", "user-experience"]
+assignees: []
+
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Your feedback helps make Aditi better! Whether it's about your migration experience, usability, or suggestions for improvement, we'd love to hear from you.
+
+  - type: dropdown
+    id: experience-level
+    attributes:
+      label: Experience Level
+      description: How familiar are you with AsciiDoc and DITA?
+      options:
+        - New to both AsciiDoc and DITA
+        - Experienced with AsciiDoc, new to DITA
+        - Experienced with DITA, new to AsciiDoc
+        - Experienced with both AsciiDoc and DITA
+    validations:
+      required: true
+
+  - type: dropdown
+    id: usage-context
+    attributes:
+      label: Usage Context
+      description: How are you using Aditi?
+      options:
+        - Evaluating for potential migration project
+        - Active migration in progress
+        - Completed migration project
+        - Regular maintenance of DITA-compatible AsciiDoc
+        - Educational/learning purposes
+        - Other
+    validations:
+      required: true
+
+  - type: textarea
+    id: project-scope
+    attributes:
+      label: Project Scope
+      description: Tell us about your documentation project
+      placeholder: |
+        - Number of AsciiDoc files: ~50
+        - Types of content: User guides, API docs, tutorials
+        - Team size: 3 technical writers
+        - Timeline: 3 months for migration
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: features-used
+    attributes:
+      label: Which Aditi features have you used?
+      description: Select all that apply
+      options:
+        - label: aditi init (project setup)
+        - label: aditi check (analysis)
+        - label: aditi fix (automatic fixes)
+        - label: aditi journey (guided workflow)
+        - label: Specific rule targeting (--rule flag)
+        - label: Verbose output (--verbose flag)
+        - label: Dry run mode (--dry-run flag)
+
+  - type: textarea
+    id: what-works-well
+    attributes:
+      label: What Works Well
+      description: What aspects of Aditi do you find most helpful?
+      placeholder: "Share what you like about Aditi - features, workflows, output, etc."
+    validations:
+      required: true
+
+  - type: textarea
+    id: pain-points
+    attributes:
+      label: Pain Points & Challenges
+      description: What aspects could be improved?
+      placeholder: "Share any frustrations, confusing parts, or areas that slow you down"
+    validations:
+      required: false
+
+  - type: dropdown
+    id: overall-satisfaction
+    attributes:
+      label: Overall Satisfaction
+      description: How satisfied are you with Aditi overall?
+      options:
+        - Very satisfied - exceeds expectations
+        - Satisfied - meets my needs well
+        - Neutral - works but has room for improvement
+        - Somewhat dissatisfied - has significant issues
+        - Very dissatisfied - doesn't meet my needs
+    validations:
+      required: true
+
+  - type: textarea
+    id: most-helpful-rules
+    attributes:
+      label: Most Helpful Rules
+      description: Which AsciiDocDITA rules have been most valuable for your project?
+      placeholder: |
+        Example:
+        - EntityReference: Saved hours of manual entity replacement
+        - ContentType: Helped standardize document metadata
+        - NestedSection: Identified structural issues early
+
+  - type: textarea
+    id: workflow-impact
+    attributes:
+      label: Workflow Impact
+      description: How has Aditi changed your migration process?
+      placeholder: "Describe how Aditi fits into your workflow and what impact it's had"
+
+  - type: textarea
+    id: missing-features
+    attributes:
+      label: Missing Features
+      description: What features would make Aditi more useful for your needs?
+      placeholder: "Features you wish existed or workflows that aren't well supported"
+
+  - type: textarea
+    id: documentation-feedback
+    attributes:
+      label: Documentation Feedback
+      description: How can we improve the documentation?
+      placeholder: "Feedback on Quick Start Guide, examples, troubleshooting, etc."
+
+  - type: checkboxes
+    id: recommendation
+    attributes:
+      label: Recommendation
+      description: Would you recommend Aditi to others?
+      options:
+        - label: Yes, I would recommend Aditi to others doing AsciiDoc→DITA migration
+        - label: Yes, but only after certain improvements
+        - label: No, it doesn't provide enough value currently
+        - label: I need more time to evaluate before recommending
+
+  - type: textarea
+    id: additional-comments
+    attributes:
+      label: Additional Comments
+      description: Anything else you'd like to share?
+      placeholder: "Success stories, specific examples, suggestions, or any other feedback"

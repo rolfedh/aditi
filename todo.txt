@@ -17,22 +17,22 @@ Generated: 2025-07-29
 - [X] Test interruption handling (Ctrl+C) during operations
 
 ### 3. Create Quick Start Guide (30 min)
-- [ ] Write docs/QUICKSTART.md with simple examples
-- [ ] Include common use cases and workflows
-- [ ] Add troubleshooting section for common issues
-- [ ] Create example AsciiDoc files that trigger each rule type
+- [X] Write docs/QUICKSTART.md with simple examples
+- [X] Include common use cases and workflows
+- [X] Add troubleshooting section for common issues
+- [X] Create example AsciiDoc files that trigger each rule type
 
 ### 4. Prepare for User Testing (30 min)
-- [ ] Update README.md with clear installation instructions
-- [ ] Create a feedback collection template (GitHub issue template)
-- [ ] List known limitations and future enhancements
-- [ ] Prepare announcement blog post draft
+- [X] Update README.md with clear installation instructions
+- [X] Create a feedback collection template (GitHub issue template)
+- [X] List known limitations and future enhancements
+- [X] Prepare announcement blog post draft
 
 ## 🔧 Technical Debt (If Time Permits)
-- [ ] Remove duplicate dependencies in CLAUDE.md auto-generation
-- [ ] Add dry-run support to journey command
-- [ ] Improve progress indicators for long operations
-- [ ] Add --version flag that shows actual version from pyproject.toml
+- [X] Remove duplicate dependencies in CLAUDE.md auto-generation
+- [X] Add dry-run support to journey command
+- [X] Improve progress indicators for long operations
+- [X] Add --version flag that shows actual version from pyproject.toml
 
 ## 📝 Documentation Tasks (If Time Permits)
 - [ ] Create animated GIF demo of journey command

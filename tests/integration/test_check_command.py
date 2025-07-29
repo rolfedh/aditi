@@ -105,7 +105,7 @@ class TestCheckCommand:
             result = runner.invoke(app, ["check", str(empty_dir)])
             
             assert result.exit_code == 0
-            assert "No .adoc files found to check" in result.output
+            assert "No valid .adoc files found to check" in result.output
     
     def test_check_command_with_rule_filter(self, runner, test_files, mock_config):
         """Test check command with rule filter."""

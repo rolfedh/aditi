@@ -17,11 +17,11 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 - GitHub CLI (`gh`) if GitHub support is needed
 
 <!-- AUTO-GENERATED:DEPENDENCIES -->
-- **Core Dependencies**: Typer CLI framework, Rich progress indicators, Pydantic configuration management, Pydantic configuration management, Vale containerization (Podman/Docker)
-- **Development Tools**: MyPy type checker, Ruff linter, Black formatter
-- **Testing Framework**: pytest with PyYAML, pytest with PyYAML, pytest with PyYAML
+- **Core Dependencies**: Typer CLI framework with type hints, Rich console output and progress indicators, Pydantic data validation and settings management, Interactive prompts and user input, Vale linter via Podman/Docker containers
+- **Development Tools**: YAML parsing for configuration, Static type checking, Fast Python linter and formatter, Git pre-commit hooks
+- **Testing Framework**: pytest testing framework, pytest coverage reporting, pytest mocking utilities
 - **Documentation**: Jekyll with Just the Docs theme
-- **CI/CD**: GitHub Actions workflows
+- **CI/CD**: GitHub Actions for automated workflows
 <!-- /AUTO-GENERATED:DEPENDENCIES -->
 
 ## Architecture
@@ -210,6 +210,7 @@ tests/
 docs/
 │   ├── CLAUDE-MD-AUTOMATION.md  # Documentation
 │   ├── Gemfile
+│   ├── QUICKSTART.md  # Documentation
 │   ├── _config.yml  # Jekyll configuration
 │   ├── _data/
     └── recent_commits.yml
@@ -236,6 +237,7 @@ docs/
 │   ├── 2025-07-28-2111-complete-asciidocdita-rule-coverage-implemented.md  # Documentation
 │   ├── 2025-07-29-0607-fixing-jekyll-front-matter-standardization.md  # Documentation
 │   ├── 2025-07-29-0638-claude-md-hybrid-automation-system.md  # Documentation
+│   ├── 2025-07-29-0816-introducing-aditi-asciidoc-to-dita-migration-made-easy.md  # Documentation
     └── post-template.md  # Blog post template
 │   ├── _sass/
 │   ├── custom/
@@ -251,6 +253,11 @@ docs/
 │   ├── design.md  # Documentation
 │   ├── drafts/
     └── workflow-feedback.md  # Documentation
+│   ├── examples/
+│   ├── README.md  # Documentation
+│   ├── clean-example.adoc
+│   ├── comprehensive-example.adoc
+    └── rule-examples/
 │   ├── inbox/
 │   ├── index.md  # Documentation
     └── publishing.md  # Documentation

@@ -60,20 +60,61 @@ RULE_PROCESSING_ORDER = [
 ]
 
 
-def journey_command() -> None:
+def journey_command(dry_run: bool = False) -> None:
     """Start an interactive journey to prepare AsciiDoc files for DITA migration."""
-    console.print(Panel.fit(
-        "🚀 [bold]Welcome to Aditi's guided journey![/bold]\n\n"
-        "This interactive workflow will help you:\n"
-        "  ✓ Configure Aditi for your repository\n"
-        "  ✓ Automatically fix or flag issues for you\n"
-        "  ✓ Prompt you to review automatic fixes\n"
-        "  ✓ Prompt you to fix flagged issues",
-        title="Aditi Journey",
-        border_style="green"
-    ))
+    if dry_run:
+        console.print(Panel.fit(
+            "🔍 [bold]Aditi Journey - Dry Run Mode[/bold]\n\n"
+            "This will preview what the journey would do:\n"
+            "  ✓ Show repository configuration options\n"
+            "  ✓ Display what fixes would be applied\n"
+            "  ✓ Preview rule processing without changes\n\n"
+            "[dim]No files will be modified in dry-run mode.[/dim]",
+            title="Aditi Journey (Dry Run)",
+            border_style="yellow"
+        ))
+    else:
+        console.print(Panel.fit(
+            "🚀 [bold]Welcome to Aditi's guided journey![/bold]\n\n"
+            "This interactive workflow will help you:\n"
+            "  ✓ Configure Aditi for your repository\n"
+            "  ✓ Automatically fix or flag issues for you\n"
+            "  ✓ Prompt you to review automatic fixes\n"
+            "  ✓ Prompt you to fix flagged issues",
+            title="Aditi Journey",
+            border_style="green"
+        ))
 
-    # Phase 1: Repository Configuration
+    if dry_run:
+        # In dry-run mode, show what would be done but don't actually do it
+        console.print("\n[yellow]Dry-run mode: Showing what would be configured and processed[/yellow]\n")
+        
+        # Show current directory and potential repository detection
+        current_dir = Path.cwd()
+        console.print(f"📁 Would analyze directory: [cyan]{current_dir}[/cyan]")
+        
+        # Check for AsciiDoc files
+        adoc_files = list(current_dir.rglob("*.adoc"))
+        if adoc_files:
+            console.print(f"📝 Found {len(adoc_files)} AsciiDoc files that would be analyzed")
+            for file in adoc_files[:5]:  # Show first 5
+                console.print(f"   • {file.relative_to(current_dir)}")
+            if len(adoc_files) > 5:
+                console.print(f"   ... and {len(adoc_files) - 5} more")
+        else:
+            console.print("📝 No AsciiDoc files found in current directory")
+        
+        # Show what rules would be processed
+        console.print(f"\n🔍 Would process {len(RULE_PROCESSING_ORDER)} AsciiDocDITA rules:")
+        for rule, level, desc in RULE_PROCESSING_ORDER:
+            emoji = "🔴" if level == "error" else "🟡" if level == "warning" else "🔵"
+            console.print(f"   {emoji} {rule} ({level})")
+        
+        console.print("\n[dim]To actually perform these actions, run without --dry-run[/dim]")
+        return
+    
+    # Normal interactive mode
+    # Phase 1: Repository Configuration  
     if not configure_repository():
         return
 

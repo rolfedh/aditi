@@ -1,0 +1,156 @@
+// AsciiDoc file demonstrating multiple AsciiDocDITA rule violations
+// Missing content type attribute - triggers ContentType rule
+
+= Software Installation Guide
+Author Name <author@example.com>
+// AuthorLine rule: Add empty line after title
+v1.0, 2024-01-15
+
+This guide shows common AsciiDoc patterns that need review for DITA migration.
+
+[NOTE]
+.Installation Requirements
+====
+Make sure you have administrative privileges{nbsp}&amp; network access.
+// EntityReference rule: &amp; and {nbsp} usage
+====
+
+== Overview
+
+This document covers the installation process.
+
+=== Prerequisites
+// NestedSection rule: Level 3+ sections not supported in DITA
+
+Before starting, you need:
+
+* Administrative access to the system  
+* At least 2GB free space&nbsp;available  
+* Network connectivity for downloads&copy;
+// EntityReference rule: &nbsp; and &copy; entities
+
+== Installation Steps
+// TaskSection rule: Sections in procedure topics not supported
+
+Follow these steps carefully:
+
+.Important Step
+// BlockTitle rule: Not all block titles supported in DITA
+****
+This is a sidebar with important information.
+// SidebarBlock rule: Sidebars not directly supported in DITA
+****
+
+1. Download the installer package
+2. Extract files to a temporary directory
+3. Run the setup executable
+4. Follow the wizard prompts
+
+[discrete]
+=== Troubleshooting
+// DiscreteHeading rule: Discrete headings have no DITA equivalent
+
+If you encounter problems:
+
+[TIP]
+.Quick Fix
+// AdmonitionTitle rule: DITA notes don't support titles
+====
+Try running as administrator if you get permission errors.
+====
+
+'''
+// ThematicBreak rule: Thematic breaks not supported in DITA
+
+[NOTE]
+====
+For more information, see the <<user-guide#advanced,Advanced User Guide>>.
+// CrossReference rule: External cross-references may need restructuring
+====
+
+== Configuration
+
+After installation, configure the application:
+
+.Configuration Table
+// BlockTitle rule: Table titles may need adjustment
+|===
+|Setting |Default |Description
+
+|Port |8080 |Application port
+|Timeout |30s |Connection timeout  
+|Debug |false |Enable debug mode
+|===
+
+== Mathematical Formulas
+
+The application uses this formula:
+
+[stem]
+++++
+E = mc^2
+++++
+// EquationFormula rule: LaTeX/AsciiMath not supported in DITA
+
+== Code Examples
+
+Here's a sample configuration:
+
+[source,yaml]
+----
+# include::config.yaml[tag=main]
+// IncludeDirective rule: Include directives need review
+server:
+  port: 8080
+  host: localhost
+----
+
+ifdef::internal[]
+// ConditionalCode rule: Conditional directives need review for DITA
+This section is only for internal documentation.
+endif::[]
+
+== Related Information
+
+For additional help, see:
+
+* link:user-guide.html[User Guide,window=_blank]
+// LinkAttribute rule: Link attributes may not convert properly
+* <<troubleshooting>>
+* https://example.com/support[Support Portal]
+
+// RelatedLinks rule: Related links section formatting
+
+[example]
+====
+// ExampleBlock rule: Example blocks only allowed in main topic body
+This shows how to run the application:
+
+`./app --config=custom.yml`
+====
+
+<<<
+// PageBreak rule: Page breaks not supported in DITA
+
+== Troubleshooting
+
+Common issues and solutions:
+
+=== Permission Errors
+// NestedSection rule: Nested sections not supported
+
+Try running with elevated privileges.
+
+'''
+
+[.lead]
+// ShortDescription rule: Lead paragraphs should use proper DITA shortdesc
+
+This concludes the installation guide. +
+// LineBreak rule: Manual line breaks discouraged in DITA
+Contact support for additional assistance.
+
+// TagDirective rule: Tag directives need review
+// tag::conclusion[]
+Installation complete! Your software is ready to use.
+// end::conclusion[]

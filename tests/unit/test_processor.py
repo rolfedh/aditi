@@ -53,7 +53,7 @@ class TestRuleProcessor:
         """Create a mock ValeContainer."""
         container = Mock()
         # Mock run_vale to return violations for the test file
-        def mock_run_vale(args):
+        def mock_run_vale(args, project_root=None):
             # Filter out --output=JSON to get actual file paths
             file_paths = [arg for arg in args if not arg.startswith('--')]
             if file_paths:
@@ -76,6 +76,8 @@ class TestRuleProcessor:
             return "{}"
         
         container.run_vale.side_effect = mock_run_vale
+        # Also mock run_vale_raw for the new implementation
+        container.run_vale_raw.side_effect = mock_run_vale
         return container
     
     @pytest.fixture
@@ -146,8 +148,8 @@ class TestRuleProcessor:
         assert len(result.fixes_skipped) == 1  # Fixes are skipped in dry run
         assert len(result.fixes_applied) == 0
         
-        # Verify Vale was called
-        mock_vale_container.run_vale.assert_called_once()
+        # Verify Vale was called (using run_vale_raw now)
+        mock_vale_container.run_vale_raw.assert_called_once()
     
     def test_process_files_with_fixes(self, processor, mock_vale_container, tmp_path):
         """Test processing files with actual fixes."""
@@ -202,17 +204,20 @@ class TestRuleProcessor:
     def test_run_vale_on_files(self, processor, mock_vale_container):
         """Test running Vale on files."""
         files = [Path("test1.adoc"), Path("test2.adoc")]
+        mock_vale_container.run_vale_raw.return_value = '{"test": "output"}'
         
         output = processor._run_vale_on_files(files)
         
         assert output is not None
-        mock_vale_container.run_vale.assert_called_once_with(
-            ["--output=JSON", "test1.adoc", "test2.adoc"]
+        assert "test1.adoc" in output  # Verify the mock response is returned
+        mock_vale_container.run_vale_raw.assert_called_once_with(
+            ["--output=JSON", "test1.adoc", "test2.adoc"],
+            Path.cwd()
         )
     
     def test_run_vale_on_files_error(self, processor, mock_vale_container):
         """Test handling Vale execution errors."""
-        mock_vale_container.run_vale.side_effect = Exception("Vale error")
+        mock_vale_container.run_vale_raw.side_effect = Exception("Vale error")
         
         output = processor._run_vale_on_files([Path("test.adoc")])
         

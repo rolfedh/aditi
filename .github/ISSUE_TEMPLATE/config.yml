@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📚 Documentation & Quick Start
+    url: https://rolfedh.github.io/aditi/
+    about: Full documentation, examples, and troubleshooting guide
+  - name: 💬 Discussions  
+    url: https://github.com/rolfedh/aditi/discussions
+    about: Ask questions, share experiences, and discuss best practices
+  - name: 🐛 Security Issues
+    url: https://github.com/rolfedh/aditi/security/advisories/new  
+    about: Report security vulnerabilities privately

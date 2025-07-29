@@ -1,0 +1,43 @@
+:_mod-docs-content-type: PROCEDURE
+
+= Installing the Application
+
+This procedure describes how to install the application on your system.
+
+[role="_abstract"]
+Follow these steps to install the application and verify the installation is successful.
+
+== Before you begin
+
+Ensure that you meet the following requirements:
+
+* Administrative privileges on the target system
+* At least 2GB of available disk space  
+* Network connectivity for downloading packages
+
+== Procedure
+
+. Download the installer package from the official website.
+. Extract the downloaded file to a temporary directory.
+. Navigate to the extracted directory.
+. Run the installer executable with administrative privileges.
+. Follow the installation wizard prompts.
+. Restart the system when prompted.
+
+== Verification
+
+To verify the installation was successful:
+
+. Open a command prompt.
+. Run the application with the `--version` flag.
+. Confirm the version number matches the installed package.
+
+== Results
+
+The application is now installed and ready for configuration.
+
+== What to do next
+
+* Configure the application settings for your environment
+* Set up user accounts and permissions
+* Review the user guide for operational procedures

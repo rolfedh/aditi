@@ -127,37 +127,59 @@ class ClaudeMdUpdater:
                 'CI/CD': []
             }
             
-            # Main dependencies
+            # Core runtime dependencies mapping
+            dep_mapping = {
+                'typer': 'Typer CLI framework with type hints',
+                'rich': 'Rich console output and progress indicators', 
+                'pydantic': 'Pydantic data validation and settings management',
+                'pydantic-settings': 'Pydantic settings (included above)',
+                'questionary': 'Interactive prompts and user input'
+            }
+            
+            # Process main dependencies
             for dep in project.get('dependencies', []):
-                if 'typer' in dep.lower():
-                    dependencies['Core Dependencies'].append('Typer CLI framework')
-                elif 'rich' in dep.lower():
-                    dependencies['Core Dependencies'].append('Rich progress indicators')
-                elif 'pydantic' in dep.lower():
-                    dependencies['Core Dependencies'].append('Pydantic configuration management')
+                dep_name = dep.split('[')[0].split('>=')[0].split('==')[0].strip()
+                if dep_name in dep_mapping:
+                    if dep_name != 'pydantic-settings':  # Avoid duplicate - it's part of pydantic ecosystem
+                        dependencies['Core Dependencies'].append(dep_mapping[dep_name])
             
-            # Dev dependencies
+            # Development dependencies mapping
+            dev_mapping = {
+                'pytest': 'pytest testing framework',
+                'pytest-cov': 'pytest coverage reporting', 
+                'pytest-mock': 'pytest mocking utilities',
+                'pyyaml': 'YAML parsing for configuration',
+                'mypy': 'Static type checking',
+                'ruff': 'Fast Python linter and formatter',
+                'black': 'Code formatting (included in ruff)',
+                'pre-commit': 'Git pre-commit hooks'
+            }
+            
+            # Process dev dependencies
             dev_deps = project.get('optional-dependencies', {}).get('dev', [])
-            for dep in dev_deps:
-                if 'pytest' in dep.lower():
-                    dependencies['Testing Framework'].append('pytest with PyYAML')
-                elif 'ruff' in dep.lower():
-                    dependencies['Development Tools'].append('Ruff linter')
-                elif 'black' in dep.lower():
-                    dependencies['Development Tools'].append('Black formatter')
-                elif 'mypy' in dep.lower():
-                    dependencies['Development Tools'].append('MyPy type checker')
+            processed_dev_deps = set()
             
-            # Check for Jekyll/GitHub Actions
+            for dep in dev_deps:
+                dep_name = dep.split('>=')[0].split('==')[0].strip()
+                if dep_name in dev_mapping and dep_name not in processed_dev_deps:
+                    if dep_name == 'black':
+                        continue  # Skip black since ruff handles formatting
+                    elif dep_name.startswith('pytest'):
+                        dependencies['Testing Framework'].append(dev_mapping[dep_name])
+                    else:
+                        dependencies['Development Tools'].append(dev_mapping[dep_name])
+                    processed_dev_deps.add(dep_name)
+            
+            # Check for additional tooling
             if (self.root / 'docs' / '_config.yml').exists():
                 dependencies['Documentation'].append('Jekyll with Just the Docs theme')
             
             if (self.root / '.github' / 'workflows').exists():
-                dependencies['CI/CD'].append('GitHub Actions workflows')
+                dependencies['CI/CD'].append('GitHub Actions for automated workflows')
             
             # Container support
             if (self.root / 'src' / 'aditi' / 'vale_container.py').exists():
-                dependencies['Core Dependencies'].append('Vale containerization (Podman/Docker)')
+                dependencies['Core Dependencies'].append('Vale linter via Podman/Docker containers')
             
             return {k: v for k, v in dependencies.items() if v}
             

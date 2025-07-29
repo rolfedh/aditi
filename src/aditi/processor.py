@@ -121,7 +121,8 @@ class RuleProcessor:
             
         try:
             # Step 1: Run Vale on all files
-            console.print("\n🔍 Running Vale analysis...")
+            est_time = len(file_paths) * 0.3  # Rough estimate: 0.3s per file for Vale
+            console.print(f"\n🔍 Running Vale analysis on {len(file_paths)} files (~{est_time:.0f}s estimated)...")
             vale_output = self._run_vale_on_files(file_paths)
             
             if not vale_output:
@@ -141,9 +142,13 @@ class RuleProcessor:
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
                 BarColumn(),
+                TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
+                TextColumn("({task.completed}/{task.total} files)"),
                 console=console
             ) as progress:
-                task = progress.add_task("Processing files...", total=len(violations_by_file))
+                est_time = len(violations_by_file) * 0.5  # Rough estimate: 0.5s per file
+                task_desc = f"Processing {len(violations_by_file)} files (~{est_time:.0f}s estimated)"
+                task = progress.add_task(task_desc, total=len(violations_by_file))
                 
                 # Process files in parallel for better performance
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
