@@ -43,20 +43,24 @@ class TestCLIIntegration:
         assert result.exit_code == 0
         mock_init.assert_called_once_with(None, False, False)
     
-    @patch("aditi.config.ConfigManager")
+    @patch("aditi.commands.check.ConfigManager")
     def test_check_placeholder(self, mock_cm, runner):
         """Test check command without configuration."""
-        # Mock empty configuration
-        mock_cm.return_value.load_config.return_value = AditiConfig()
+        # Mock empty configuration that returns empty allowed_paths
+        config = AditiConfig()
+        config.allowed_paths = []
+        mock_cm.return_value.load_config.return_value = config
         result = runner.invoke(app, ["check"])
         assert result.exit_code == 1
         assert "No paths configured" in result.stdout
     
-    @patch("aditi.config.ConfigManager")
+    @patch("aditi.commands.fix.ConfigManager")
     def test_fix_placeholder(self, mock_cm, runner):
         """Test fix command without configuration."""
-        # Mock empty configuration
-        mock_cm.return_value.load_config.return_value = AditiConfig()
+        # Mock empty configuration that returns empty allowed_paths
+        config = AditiConfig()
+        config.allowed_paths = []
+        mock_cm.return_value.load_config.return_value = config
         result = runner.invoke(app, ["fix"])
         assert result.exit_code == 1
         assert "No paths configured" in result.stdout
@@ -70,11 +74,15 @@ class TestCLIIntegration:
         result = runner.invoke(app, ["journey"])
         assert result.exit_code == 1
     
-    @patch("aditi.config.ConfigManager")
-    def test_verbose_option(self, mock_cm, runner):
+    @patch("aditi.commands.fix.ConfigManager") 
+    @patch("aditi.commands.check.ConfigManager")
+    def test_verbose_option(self, mock_check_cm, mock_fix_cm, runner):
         """Test verbose option."""
-        # Mock empty configuration
-        mock_cm.return_value.load_config.return_value = AditiConfig()
+        # Mock empty configuration for both commands
+        config = AditiConfig()
+        config.allowed_paths = []
+        mock_check_cm.return_value.load_config.return_value = config
+        mock_fix_cm.return_value.load_config.return_value = config
         
         result = runner.invoke(app, ["check", "--verbose"])
         assert result.exit_code == 1  # Still fails due to no paths, but accepts the option

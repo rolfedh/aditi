@@ -61,7 +61,7 @@ class TestValeParser:
         
         # Check first violation
         v1 = violations[0]
-        assert v1.file_path == Path("docs/test.adoc")
+        assert v1.file_path == Path.cwd() / "docs/test.adoc"
         assert v1.rule_name == "EntityReference"
         assert v1.line == 15
         assert v1.column == 23
@@ -78,7 +78,7 @@ class TestValeParser:
         
         # Check third violation
         v3 = violations[2]
-        assert v3.file_path == Path("docs/another.adoc")
+        assert v3.file_path == Path.cwd() / "docs/another.adoc"
         assert v3.rule_name == "TaskSection"
         assert v3.severity == Severity.SUGGESTION
     
@@ -103,10 +103,10 @@ class TestValeParser:
         grouped = parser.group_by_file(violations)
         
         assert len(grouped) == 2
-        assert Path("docs/test.adoc") in grouped
-        assert Path("docs/another.adoc") in grouped
-        assert len(grouped[Path("docs/test.adoc")]) == 2
-        assert len(grouped[Path("docs/another.adoc")]) == 1
+        assert Path.cwd() / "docs/test.adoc" in grouped
+        assert Path.cwd() / "docs/another.adoc" in grouped
+        assert len(grouped[Path.cwd() / "docs/test.adoc"]) == 2
+        assert len(grouped[Path.cwd() / "docs/another.adoc"]) == 1
     
     def test_group_by_rule(self, sample_vale_output):
         """Test grouping violations by rule."""

@@ -1,0 +1,5 @@
+# Requirements for building and publishing to PyPI
+build>=1.0.3
+twine>=4.0.2
+setuptools>=68.0.0
+wheel>=0.42.0

@@ -1,0 +1,17 @@
+include LICENSE
+include README.md
+include CHANGELOG.md
+include pyproject.toml
+recursive-include src/aditi *.py
+include src/aditi/py.typed
+include src/aditi/vale/*.ini
+recursive-exclude * __pycache__
+recursive-exclude * *.py[co]
+recursive-exclude tests *
+recursive-exclude docs *
+recursive-exclude meta *
+exclude .gitignore
+exclude .pypirc*
+exclude Makefile
+exclude tox.ini
+exclude .pre-commit-config.yaml

@@ -8,18 +8,17 @@ version = "0.1.0"
 description = "A CLI tool to prepare AsciiDoc files for migration to DITA"
 readme = "README.md"
 requires-python = ">=3.11"
-license = {text = "MIT"}
+license = "MIT"
 authors = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Rolfe Dlugy-Hegwer", email = "rolfedh@github.com"},
 ]
 maintainers = [
-    {name = "Your Name", email = "your.email@example.com"},
+    {name = "Rolfe Dlugy-Hegwer", email = "rolfedh@github.com"},
 ]
 classifiers = [
     "Development Status :: 3 - Alpha",
     "Intended Audience :: Developers",
     "Topic :: Software Development :: Documentation",
-    "License :: OSI Approved :: MIT License",
     "Programming Language :: Python :: 3",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
