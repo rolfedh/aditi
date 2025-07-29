@@ -3,6 +3,31 @@
 
 set -e
 
+# Show usage
+if [[ "$1" == "--help" ]] || [[ "$1" == "-h" ]]; then
+    echo "Usage: $0 [--skip-tests] [--non-interactive]"
+    echo ""
+    echo "Options:"
+    echo "  --skip-tests       Skip running tests before publishing"
+    echo "  --non-interactive  Run without prompts (skips TestPyPI, aborts on test failure)"
+    echo "  --help, -h         Show this help message"
+    exit 0
+fi
+
+# Check for non-interactive mode
+NONINTERACTIVE=false
+if [[ "$1" == "--non-interactive" ]] || [[ "$2" == "--non-interactive" ]]; then
+    NONINTERACTIVE=true
+fi
+
+# Ensure we're using a proper terminal for interactive prompts
+if [ ! -t 0 ] && [ "$NONINTERACTIVE" = false ]; then
+    echo "❌ Error: This script requires an interactive terminal"
+    echo "Please run directly from a terminal, not through a pipe or redirect"
+    echo "Or use --non-interactive flag to skip prompts"
+    exit 1
+fi
+
 echo "🚀 Preparing to publish Aditi to PyPI..."
 
 # Check if we're in the right directory
@@ -19,9 +44,13 @@ rm -rf dist/ build/ src/*.egg-info
 if [[ "$1" != "--skip-tests" ]]; then
     echo "🧪 Running tests..."
     python -m pytest tests/ -v || {
-        echo "⚠️  Some tests failed. Continue anyway? [y/N]"
-        read -n 1 -r
-        echo ""
+        if [ "$NONINTERACTIVE" = true ]; then
+            echo "⚠️  Some tests failed. Aborting in non-interactive mode."
+            exit 1
+        fi
+        echo -n "⚠️  Some tests failed. Continue anyway? [y/N] "
+        read -r REPLY
+        REPLY=${REPLY:-N}
         if [[ ! $REPLY =~ ^[Yy]$ ]]; then
             echo "❌ Aborted due to test failures"
             exit 1
@@ -61,8 +90,14 @@ echo "  1. Created a PyPI account at https://pypi.org"
 echo "  2. Generated an API token at https://pypi.org/manage/account/token/"
 echo "  3. Created ~/.pypirc with your token (see .pypirc.template)"
 echo ""
-read -p "Do you want to upload to TestPyPI first? (recommended) [y/N] " -n 1 -r
-echo ""
+if [ "$NONINTERACTIVE" = true ]; then
+    REPLY="N"
+    echo "⚠️  Skipping TestPyPI upload in non-interactive mode"
+else
+    echo -n "Do you want to upload to TestPyPI first? (recommended) [y/N] "
+    read -r REPLY
+    REPLY=${REPLY:-N}
+fi
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "📤 Uploading to TestPyPI..."
@@ -71,8 +106,9 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "✅ Uploaded to TestPyPI!"
     echo "Test installation with: pip install -i https://test.pypi.org/simple/ aditi"
     echo ""
-    read -p "Continue to upload to PyPI? [y/N] " -n 1 -r
-    echo ""
+    echo -n "Continue to upload to PyPI? [y/N] "
+    read -r REPLY
+    REPLY=${REPLY:-N}
     if [[ ! $REPLY =~ ^[Yy]$ ]]; then
         echo "❌ Cancelled PyPI upload"
         exit 0
