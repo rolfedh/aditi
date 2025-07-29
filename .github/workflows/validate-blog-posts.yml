@@ -1,0 +1,91 @@
+name: Validate Blog Posts
+
+on:
+  # Run on pushes that modify blog posts or the validation script
+  push:
+    paths:
+      - 'docs/_posts/**'
+      - 'docs/_config.yml'
+      - 'tests/test_blog_post_validation.py'
+      - '.github/workflows/validate-blog-posts.yml'
+  
+  # Run on pull requests
+  pull_request:
+    paths:
+      - 'docs/_posts/**'
+      - 'docs/_config.yml'
+      - 'tests/test_blog_post_validation.py'
+      - '.github/workflows/validate-blog-posts.yml'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+
+jobs:
+  validate-blog-posts:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest pyyaml
+      
+      - name: Run blog post validation tests
+        run: |
+          echo "🔍 Running blog post validation tests..."
+          python -m pytest tests/test_blog_post_validation.py -v
+      
+      - name: Run standalone validation check
+        run: |
+          echo "🧪 Running standalone validation..."
+          python tests/test_blog_post_validation.py
+      
+      - name: Check Jekyll config for dangerous patterns
+        run: |
+          echo "⚙️  Checking Jekyll configuration..."
+          
+          # Ensure template files are excluded
+          if ! grep -q "post-template.md" docs/_config.yml; then
+            echo "❌ Jekyll config should exclude post-template.md"
+            exit 1
+          fi
+          
+          if ! grep -q "drafts/" docs/_config.yml; then
+            echo "❌ Jekyll config should exclude drafts/ directory"
+            exit 1
+          fi
+          
+          echo "✅ Jekyll config validation passed"
+      
+      - name: Check for dangerous placeholder files
+        run: |
+          echo "🚨 Checking for dangerous files..."
+          
+          # Look for files with YYYY-MM-DD patterns (excluding this workflow and the test)
+          dangerous_files=$(find docs/ -name "*YYYY-MM-DD*" -type f 2>/dev/null || true)
+          if [ -n "$dangerous_files" ]; then
+            echo "❌ Found files with YYYY-MM-DD patterns:"
+            echo "$dangerous_files"
+            exit 1
+          fi
+          
+          # Look for literal placeholder dates in markdown files
+          if grep -r "date: YYYY-MM-DD HH:MM:SS" docs/ --include="*.md" | grep -v template; then
+            echo "❌ Found literal placeholder dates in published content"
+            exit 1
+          fi
+          
+          echo "✅ No dangerous files found"
+      
+      - name: Summary
+        run: |
+          echo "✅ All blog post validations passed!"
+          echo "📊 Blog posts are properly formatted and safe for Jekyll processing."

@@ -25,7 +25,7 @@ The error message pointed to an invalid date format, but Jekyll was parsing some
 
 A systematic search revealed multiple issues:
 
-1. **Template files with placeholder dates**: Blog post templates contained `date: YYYY-MM-DD HH:MM:SS -0400` which Jekyll tried to parse
+1. **Template files with placeholder dates**: Blog post templates contained `date: YYYY-MM-DD HH:MM:SS -0400` (placeholder format) which Jekyll tried to parse
 2. **Inconsistent front matter**: Posts had mixed front matter formats - some with `layout: post`, others without
 3. **Mixed field usage**: Some posts used `categories`, others used `tags`, creating inconsistent metadata
 
@@ -43,7 +43,7 @@ We established a consistent front matter structure for all posts:
 ---
 layout: post
 title: "Your Post Title"
-date: YYYY-MM-DD HH:MM:SS -0400
+date: YYYY-MM-DD HH:MM:SS -0400  # placeholder format
 author: Author Name
 tags: [tag1, tag2, tag3]
 summary: "Brief description"
