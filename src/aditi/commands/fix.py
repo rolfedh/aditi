@@ -40,20 +40,36 @@ def fix_command(
     if not paths:
         # Use configured directories
         if not config.allowed_paths and not config.selected_directories:
-            console.print("[yellow]No paths configured. Run 'aditi journey' to configure paths.[/yellow]")
+            console.print("[yellow]No paths configured for fixing.[/yellow]")
+            console.print("To fix this, run: [bold]aditi journey[/bold] to configure your repository paths.")
             raise typer.Exit(1)
         paths_to_fix = config.allowed_paths or config.selected_directories
     else:
         # Validate paths against configuration
         paths_to_fix = []
+        skipped_paths = []
         for path in paths:
             if config.is_path_allowed(path):
                 paths_to_fix.append(path)
             else:
-                console.print(f"[yellow]Warning: Skipping {path} (not in allowed paths)[/yellow]")
+                skipped_paths.append(path)
+                
+        # Show informative message about skipped paths
+        if skipped_paths:
+            console.print(f"[yellow]Warning: Skipping {len(skipped_paths)} path(s) not in allowed directories:[/yellow]") 
+            for path in skipped_paths:
+                console.print(f"  • {path}")
+            if config.allowed_paths:
+                console.print(f"\n[dim]Allowed paths:[/dim]")
+                for allowed in config.allowed_paths:
+                    console.print(f"  • {allowed}")
+            console.print("\nTo add paths, run: [bold]aditi journey[/bold] to configure repository access.")
                 
     if not paths_to_fix:
         console.print("[red]No valid paths to fix.[/red]")
+        if paths:
+            console.print("All specified paths were outside the configured allowed directories.")
+            console.print("Run [bold]aditi journey[/bold] to add the paths you want to fix.")
         raise typer.Exit(1)
         
     # Collect all .adoc files

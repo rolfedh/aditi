@@ -50,40 +50,86 @@ def check_command(
     if not paths:
         # Use configured directories
         if not config.allowed_paths:
-            console.print("[yellow]No paths configured. Run 'aditi journey' to configure paths.[/yellow]")
+            console.print("[yellow]No paths configured for checking.[/yellow]")
+            console.print("To fix this, run: [bold]aditi journey[/bold] to configure your repository paths.")
             raise typer.Exit(1)
         paths_to_check = config.allowed_paths
     else:
         # Validate paths against configuration
         paths_to_check = []
+        skipped_paths = []
         for path in paths:
             if config.is_path_allowed(path):
                 paths_to_check.append(path)
             else:
-                console.print(f"[yellow]Warning: Skipping {path} (not in allowed paths)[/yellow]")
+                skipped_paths.append(path)
+                
+        # Show informative message about skipped paths
+        if skipped_paths:
+            console.print(f"[yellow]Warning: Skipping {len(skipped_paths)} path(s) not in allowed directories:[/yellow]") 
+            for path in skipped_paths:
+                console.print(f"  • {path}")
+            if config.allowed_paths:
+                console.print(f"\n[dim]Allowed paths:[/dim]")
+                for allowed in config.allowed_paths:
+                    console.print(f"  • {allowed}")
+            console.print("\nTo add paths, run: [bold]aditi journey[/bold] to configure repository access.")
                 
     if not paths_to_check:
         console.print("[red]No valid paths to check.[/red]")
+        if paths:
+            console.print("All specified paths were outside the configured allowed directories.")
+            console.print("Run [bold]aditi journey[/bold] to add the paths you want to check.")
         raise typer.Exit(1)
         
-    # Collect all .adoc files
+    # Collect all .adoc files with validation
     adoc_files = []
+    invalid_files = []
+    
     for path in paths_to_check:
         if path.is_file() and path.suffix == ".adoc":
-            adoc_files.append(path)
+            # Validate file is readable and not empty
+            try:
+                if path.stat().st_size == 0:
+                    invalid_files.append(f"{path} (empty file)")
+                    continue
+                # Try to read first few bytes to ensure it's readable
+                with open(path, 'r', encoding='utf-8') as f:
+                    f.read(100)  # Just check if we can read the start
+                adoc_files.append(path)
+            except (OSError, UnicodeDecodeError, PermissionError) as e:
+                invalid_files.append(f"{path} ({e})")
         elif path.is_dir():
             # Find all .adoc files recursively, handling symlinks based on config
             for adoc_file in path.rglob("*.adoc"):
-                if config.ignore_symlinks:
-                    # Only add if it's NOT a symlink
-                    if not adoc_file.is_symlink():
-                        adoc_files.append(adoc_file)
-                else:
-                    # Add all files (including symlinks)
+                try:
+                    # Check if file is accessible and not empty
+                    if adoc_file.stat().st_size == 0:
+                        invalid_files.append(f"{adoc_file} (empty file)")
+                        continue
+                        
+                    if config.ignore_symlinks and adoc_file.is_symlink():
+                        continue
+                        
+                    # Try to read first few bytes to ensure it's readable
+                    with open(adoc_file, 'r', encoding='utf-8') as f:
+                        f.read(100)  # Just check if we can read the start
                     adoc_files.append(adoc_file)
+                except (OSError, UnicodeDecodeError, PermissionError) as e:
+                    invalid_files.append(f"{adoc_file} ({e})")
+    
+    # Report any invalid files found
+    if invalid_files:
+        console.print(f"[yellow]Warning: Skipping {len(invalid_files)} invalid file(s):[/yellow]")
+        for invalid_file in invalid_files[:5]:  # Show first 5
+            console.print(f"  • {invalid_file}")
+        if len(invalid_files) > 5:
+            console.print(f"  ... and {len(invalid_files) - 5} more")
                     
     if not adoc_files:
-        console.print("[yellow]No .adoc files found to check.[/yellow]")
+        console.print("[yellow]No valid .adoc files found to check.[/yellow]")
+        if invalid_files:
+            console.print("All found .adoc files had issues (empty, unreadable, or permission errors).")
         raise typer.Exit(0)
         
     # Initialize Vale container
