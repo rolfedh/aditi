@@ -17,11 +17,15 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 - GitHub CLI (`gh`) if GitHub support is needed
 
 <!-- AUTO-GENERATED:DEPENDENCIES -->
-- **Core Dependencies**: Typer CLI framework, Rich progress indicators, Pydantic configuration management, Pydantic configuration management, Vale containerization (Podman/Docker)
-- **Development Tools**: MyPy type checker, Ruff linter, Black formatter
-- **Testing Framework**: pytest with PyYAML, pytest with PyYAML, pytest with PyYAML
+### Key Dependencies
+- **Container image**: `docker.io/jdkato/vale:latest` (Official Vale linter)
+- **AsciiDocDITA styles**: Downloaded automatically via Vale's package system
+- **Python CLI**: Typer framework with Rich progress indicators
 - **Documentation**: Jekyll with Just the Docs theme
-- **CI/CD**: GitHub Actions workflows
+- **Testing**: pytest with PyYAML for front matter validation
+- **CI/CD**: GitHub Actions for deployment and validation workflows
+- **Quality Assurance**: Comprehensive blog post validation test suite
+- **Distribution**: PyPI packaging with modern pyproject.toml
 <!-- /AUTO-GENERATED:DEPENDENCIES -->
 
 ## Architecture
@@ -45,20 +49,31 @@ Rules are grouped by dependencies - ContentType must run before rules that depen
 <!-- AUTO-GENERATED:COMMANDS -->
 ## Common Commands
 
+### Container Setup & Testing
+- Test Vale integration: `python test_vale_integration.py`
+- Test AsciiDocDITA rules: `python test_asciidocdita_rules.py`
+- Initialize project with Vale: `aditi init` (when CLI is built)
+
 ### Blog Post Management
 - **Validate blog posts**: `python tests/test_blog_post_validation.py`
 - **Run specific validation tests**: `python -m pytest tests/test_blog_post_validation.py -v`
+- **Create new post**: Follow filename pattern `YYYY-MM-DD-HHMM-title.md`
+- **Check front matter**: Ensure all required fields are present
 
 ### GitHub Pages Development
 - **Local development**: `cd docs && bundle exec jekyll serve`
 - **Validation URL**: `http://localhost:4000/aditi/`
+- **Theme**: Just the Docs with custom styling and drop shadows
+- **Auto-updates**: Recent commits section via GitHub Actions
+- **Link testing**: Verify `/aditi/` prefix for internal links
 
 ### Python Development
-- **Install dependencies**: `pip install -e ".[dev]"`
-- **Run tests**: `pytest`
-- **Type checking**: `mypy src/`
-- **Code formatting**: `black src/ tests/`
-- **Linting**: `ruff check src/ tests/`
+- **Package management**: Modern pyproject.toml with development dependencies
+- **CLI framework**: Typer with Rich progress indicators
+- **Container integration**: Podman/Docker support for Vale
+- **Test suite**: Unit, integration, and blog post validation tests
+- **Quality assurance**: Blog post validation prevents Jekyll deployment failures
+- **Dependencies**: PyYAML added for YAML parsing in tests
 <!-- /AUTO-GENERATED:COMMANDS -->
 
 ## Important Rules
@@ -104,19 +119,29 @@ User configuration stored in `~/aditi-data/config.json`:
 
 <!-- AUTO-GENERATED:COMPLETED -->
 ### Completed (Phase 0)
-✅ Vale container integration with Podman/Docker support
-✅ Init command with Rich progress indicators
+- ✅ Vale container integration with Podman/Docker support
+- ✅ ValeContainer class for container lifecycle management
+- ✅ Automatic AsciiDocDITA style downloading
+- ✅ Init command with Rich progress indicators
+- ✅ Comprehensive test scripts
+- ✅ Container setup documentation
 
-### Completed (Phase 1)
-✅ Modern Python packaging with pyproject.toml
-✅ Complete CLI structure with Typer framework
-✅ Configuration management with Pydantic models
-✅ Comprehensive test suite (unit and integration)
+### Completed (Phase 1) 
+- ✅ Modern Python packaging with pyproject.toml
+- ✅ Complete CLI structure with Typer framework
+- ✅ Configuration management with Pydantic models
+- ✅ Git guidance module for workflow assistance
+- ✅ Comprehensive test suite (unit and integration)
+- ✅ Package structure with proper exports
+- ✅ Working CLI with placeholder commands
 
 ### Completed (Documentation & Quality Assurance)
-✅ Blog post validation test suite with regression prevention
-✅ Jekyll front matter standardization across all blog posts
-✅ GitHub Actions workflow for automated blog post validation
+- ✅ Jekyll front matter standardization across all blog posts
+- ✅ Blog post validation test suite with regression prevention
+- ✅ GitHub Actions workflow for automated blog post validation
+- ✅ Comprehensive documentation with test README
+- ✅ Template file safety and exclusion management
+- ✅ GitHub Pages deployment reliability improvements
 <!-- /AUTO-GENERATED:COMPLETED -->
 
 ### Next Phases
@@ -128,137 +153,31 @@ User configuration stored in `~/aditi-data/config.json`:
 ### Current Architecture
 ```
 src/aditi/
-│   ├── __init__.py  # Package initialization
-│   ├── cli.py  # Main CLI interface
-│   ├── cli_prototype.py
-│   ├── commands/
-│   │   ├── __init__.py  # Package initialization
-│   │   ├── check.py
-│   │   ├── fix.py
-│   │   ├── init.py
-│   │   ├── journey.py
-│       └── vale.py
-│   ├── config.py  # Configuration management
-│   ├── git.py
-│   ├── processor.py
-│   ├── py.typed
-│   ├── rules/
-│   │   ├── __init__.py  # Package initialization
-│   │   ├── admonition_title.py
-│   │   ├── attribute_reference.py
-│   │   ├── author_line.py
-│   │   ├── base.py
-│   │   ├── block_title.py
-│   │   ├── conditional_code.py
-│   │   ├── content_type.py
-│   │   ├── cross_reference.py
-│   │   ├── discrete_heading.py
-│   │   ├── entity_reference.py
-│   │   ├── equation_formula.py
-│   │   ├── example_block.py
-│   │   ├── include_directive.py
-│   │   ├── line_break.py
-│   │   ├── link_attribute.py
-│   │   ├── nested_section.py
-│   │   ├── page_break.py
-│   │   ├── registry.py
-│   │   ├── related_links.py
-│   │   ├── short_description.py
-│   │   ├── sidebar_block.py
-│   │   ├── table_footer.py
-│   │   ├── tag_directive.py
-│   │   ├── task_duplicate.py
-│   │   ├── task_example.py
-│   │   ├── task_section.py
-│   │   ├── task_step.py
-│   │   ├── task_title.py
-│       └── thematic_break.py
-│   ├── scanner.py
-│   ├── vale/
-│       └── vale_config_template.ini
-│   ├── vale_container.py
-    └── vale_parser.py
+├── __init__.py               # Package exports and metadata
+├── cli.py                    # Main CLI with Typer
+├── config.py                 # Configuration management with Pydantic
+├── git.py                    # Git workflow guidance
+├── vale_container.py         # Container runtime management
+├── vale/
+│   └── vale_config_template.ini
+└── commands/
+    ├── __init__.py
+    └── init.py               # Initialization command
 tests/
-│   ├── README.md  # Documentation
-│   ├── __init__.py  # Package initialization
-│   ├── conftest.py  # Shared test fixtures
-│   ├── integration/
-│   ├── __init__.py  # Package initialization
-│   ├── test_check_command.py  # Test module
-    └── test_cli_integration.py  # Test module
-│   ├── test_blog_post_validation.py  # Test module
-    └── unit/
-│   ├── __init__.py  # Package initialization
-│   ├── test_config.py  # Test module
-│   ├── test_fix_command.py  # Test module
-│   ├── test_git.py  # Test module
-│   ├── test_journey_command.py  # Test module
-│   ├── test_journey_workflow.py  # Test module
-│   ├── test_non_deterministic_rules.py  # Test module
-│   ├── test_processor.py  # Test module
-│   ├── test_rules.py  # Test module
-    └── test_vale_parser.py  # Test module
+├── unit/                     # Unit tests for all modules
+├── integration/              # CLI integration tests
+├── test_blog_post_validation.py  # Jekyll front matter validation
+├── README.md                 # Test documentation
+└── conftest.py              # Shared test fixtures
 docs/
-│   ├── CLAUDE-MD-AUTOMATION.md  # Documentation
-│   ├── Gemfile
-│   ├── _config.yml  # Jekyll configuration
-│   ├── _data/
-    └── recent_commits.yml
-│   ├── _design/
-│   ├── aditi-claude-code-implementation.md  # Documentation
-│   ├── aditi-claude-code-todo-list.md  # Documentation
-│   ├── aditi-plan.md  # Documentation
-│   ├── container-setup-tasks.md  # Documentation
-│   ├── phase-1-next-steps.md  # Documentation
-│   ├── phase-2-completion-summary.md  # Documentation
-│   ├── phase-2-mockup-revised.md  # Documentation
-│   ├── phase-2-mockup.md  # Documentation
-│   ├── phase-2-next-steps.md  # Documentation
-    └── remaining-work-to-complete.txt
-│   ├── _posts/
-│   ├── 2025-07-27-0723-i-finally-speak-a-programming-language.md  # Documentation
-│   ├── 2025-07-27-0832-setting-up-github-pages.md  # Documentation
-│   ├── 2025-07-27-0845-minima-vs-just-the-docs.md  # Documentation
-│   ├── 2025-07-27-0848-organizing-blog-assets-with-claude.md  # Documentation
-│   ├── 2025-07-27-1811-implementing-phase-1-core-infrastructure.md  # Documentation
-│   ├── 2025-07-27-1811-implementing-vale-asciidocdita-container-integration.md  # Documentation
-│   ├── 2025-07-27-2035-removing-git-integration-from-aditi-cli-design.md  # Documentation
-│   ├── 2025-07-28-2030-running-vale-asciidocdita-directly-from-command-line.md  # Documentation
-│   ├── 2025-07-28-2111-complete-asciidocdita-rule-coverage-implemented.md  # Documentation
-│   ├── 2025-07-29-0607-fixing-jekyll-front-matter-standardization.md  # Documentation
-│   ├── 2025-07-29-0638-claude-md-hybrid-automation-system.md  # Documentation
-    └── post-template.md  # Blog post template
-│   ├── _sass/
-│   ├── custom/
-│       └── custom.scss
-    └── just-the-docs-default.scss
-│   ├── about.md  # Documentation
-│   ├── assets/
-│   ├── css/
-    └── images/
-│       └── blog/
-│   ├── container-setup.md  # Documentation
-│   ├── design/
-│   ├── design.md  # Documentation
-│   ├── drafts/
-    └── workflow-feedback.md  # Documentation
-│   ├── inbox/
-│   ├── index.md  # Documentation
-    └── publishing.md  # Documentation
+├── _posts/                   # Blog posts with standardized front matter
+├── _config.yml              # Jekyll config with proper exclusions
+├── post-template.md          # Safe template file
+└── assets/                   # Blog assets and images
 .github/workflows/
-│   ├── jekyll-gh-pages.yml  # GitHub Actions workflow
-│   ├── update-claude-md.yml  # GitHub Actions workflow
-│   ├── update-commits.yml  # GitHub Actions workflow
-    └── validate-blog-posts.yml  # GitHub Actions workflow
-scripts/
-│   ├── README.md  # Documentation
-│   ├── claude_md_updater.py
-│   ├── install-git-hooks.sh
-│   ├── manage-git-hooks.sh
-│   ├── new-blog-post.sh
-│   ├── publish-to-pypi.sh
-│   ├── test-package-install.sh
-    └── upload-to-pypi.sh
+├── jekyll-gh-pages.yml       # GitHub Pages deployment
+├── update-commits.yml        # Recent commits automation
+└── validate-blog-posts.yml   # Blog post validation CI
 ```
 <!-- /AUTO-GENERATED:ARCHITECTURE -->
 
@@ -347,7 +266,16 @@ A comprehensive test suite prevents Jekyll deployment failures:
 5. **Validation**: Run `python tests/test_blog_post_validation.py` before committing
 
 <!-- AUTO-GENERATED:RECENT -->
-## Recent Development Focus (July 2025)
+## Recent Development Focus ({{ current_month }} {{ current_year }})
+
+### Latest Achievements
+<!-- This section will be automatically updated based on recent commits and project analysis -->
+
+### Current Focus Areas
+<!-- This section will be automatically updated based on active development patterns -->
+
+### Key Lessons Learned
+<!-- This section will be automatically updated based on commit messages and project history -->
 <!-- /AUTO-GENERATED:RECENT -->
 
 # important-instruction-reminders

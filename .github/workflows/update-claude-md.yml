@@ -1,0 +1,140 @@
+name: Update CLAUDE.md
+
+on:
+  # Trigger on significant changes
+  push:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'pyproject.toml'
+      - '.github/workflows/**'
+      - 'docs/_config.yml'
+      - 'scripts/**'
+  
+  # Weekly automatic update on Sundays at 6 AM UTC
+  schedule:
+    - cron: '0 6 * * 0'
+  
+  # Allow manual triggering
+  workflow_dispatch:
+    inputs:
+      force_update:
+        description: 'Force update even if no changes detected'
+        required: false
+        default: 'false'
+        type: boolean
+
+jobs:
+  update-claude-md:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          # Need full history for commit analysis
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install toml
+      
+      - name: Run CLAUDE.md updater
+        id: update_claude
+        run: |
+          echo "🔄 Running CLAUDE.md updater..."
+          
+          # Make script executable
+          chmod +x scripts/claude_md_updater.py
+          
+          # Run the updater
+          if [[ "${{ github.event.inputs.force_update }}" == "true" ]]; then
+            python scripts/claude_md_updater.py --force
+          else
+            python scripts/claude_md_updater.py
+          fi
+          
+          # Check if CLAUDE.md was modified
+          if git diff --quiet CLAUDE.md; then
+            echo "updated=false" >> $GITHUB_OUTPUT
+            echo "✅ CLAUDE.md is already up to date"
+          else
+            echo "updated=true" >> $GITHUB_OUTPUT
+            echo "📝 CLAUDE.md has been updated"
+          fi
+      
+      - name: Show changes
+        if: steps.update_claude.outputs.updated == 'true'
+        run: |
+          echo "📋 Changes made to CLAUDE.md:"
+          git diff CLAUDE.md || true
+      
+      - name: Commit changes
+        if: steps.update_claude.outputs.updated == 'true'
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          
+          git add CLAUDE.md
+          
+          # Create descriptive commit message
+          echo "docs: Auto-update CLAUDE.md with current project state" > commit_msg.txt
+          echo "" >> commit_msg.txt
+          echo "Automated update includes:" >> commit_msg.txt
+          echo "- Current project architecture and file structure" >> commit_msg.txt
+          echo "- Updated dependencies from pyproject.toml" >> commit_msg.txt
+          echo "- Recent development focus and achievements" >> commit_msg.txt
+          echo "- Available commands and tools" >> commit_msg.txt
+          echo "- Implementation status based on project analysis" >> commit_msg.txt
+          echo "" >> commit_msg.txt
+          echo "🤖 Generated with automated CLAUDE.md updater" >> commit_msg.txt
+          echo "" >> commit_msg.txt
+          echo "Co-Authored-By: CLAUDE.md Updater <noreply@github.com>" >> commit_msg.txt
+          
+          git commit -F commit_msg.txt
+          rm commit_msg.txt
+      
+      - name: Push changes
+        if: steps.update_claude.outputs.updated == 'true'
+        run: |
+          git push
+          echo "✅ CLAUDE.md updates pushed to repository"
+      
+      - name: Create summary
+        run: |
+          if [[ "${{ steps.update_claude.outputs.updated }}" == "true" ]]; then
+            echo "## ✅ CLAUDE.md Updated Successfully" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "The CLAUDE.md file has been automatically updated with:" >> $GITHUB_STEP_SUMMARY
+            echo "- 🏗️ Current project architecture" >> $GITHUB_STEP_SUMMARY
+            echo "- 📦 Latest dependencies from pyproject.toml" >> $GITHUB_STEP_SUMMARY
+            echo "- 🎯 Recent development focus and achievements" >> $GITHUB_STEP_SUMMARY
+            echo "- 🛠️ Available commands and development tools" >> $GITHUB_STEP_SUMMARY
+            echo "- ✅ Implementation status based on project analysis" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "### Recent Changes" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`diff" >> $GITHUB_STEP_SUMMARY
+            git show --stat HEAD >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "## ℹ️ CLAUDE.md Already Current" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            echo "No updates were needed - CLAUDE.md is already synchronized with the current project state." >> $GITHUB_STEP_SUMMARY
+          fi
+      
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "## ❌ CLAUDE.md Update Failed" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "The automated CLAUDE.md update encountered an error. Please check the workflow logs and update manually if needed." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Manual update command: \`python scripts/claude_md_updater.py --force\`" >> $GITHUB_STEP_SUMMARY
