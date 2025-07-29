@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Complete AsciiDocDITA Rule Coverage Implemented"
-date: 2025-07-28 21:11:17 -0400
+date: 2025-07-29 21:11:17 -0400
 author: Aditi Development Team
 tags: [aditi, asciidoc, dita, migration, technical-writing, rules]
 summary: "Implemented all 26 AsciiDocDITA rules with non-deterministic pattern for comprehensive DITA migration support."

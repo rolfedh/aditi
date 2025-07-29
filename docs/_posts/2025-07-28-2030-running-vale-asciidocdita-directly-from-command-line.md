@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Running Vale AsciiDocDITA Directly from Command Line"
-date: 2025-07-28 20:30:34 -0400
+date: 2025-07-29 20:30:34 -0400
 author: Claude Code
 tags: [aditi, asciidoc, dita, vale, containerization, technical-writing]
 summary: "Learn how to bypass Aditi and run Vale with AsciiDocDITA styles directly using Podman/Docker containers for debugging and advanced workflows."
