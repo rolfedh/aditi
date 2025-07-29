@@ -10,6 +10,7 @@ from rich.console import Console
 from rich.logging import RichHandler
 
 from aditi.commands import init_command, check_command, journey_command, fix_command
+from aditi.commands.vale import vale_command, show_vale_version, list_vale_styles
 
 console = Console()
 app = typer.Typer(
@@ -173,6 +174,40 @@ def journey(
     """
     setup_logging(verbose)
     journey_command()
+
+
+@app.command()
+def vale(
+    paths: Optional[list[Path]] = typer.Argument(
+        None,
+        help="Paths to check (files or directories). If not specified, checks configured directories."
+    ),
+    output_format: str = typer.Option(
+        "JSON",
+        "--output",
+        "-o",
+        help="Output format: JSON, line, or CLI (default: JSON)",
+    ),
+    pretty: bool = typer.Option(
+        True,
+        "--pretty/--no-pretty",
+        help="Pretty print JSON output (default: True)",
+    ),
+    verbose: bool = verbose_option,
+) -> None:
+    """Run Vale directly and show the raw output.
+    
+    This command runs Vale with the AsciiDocDITA styles and shows
+    the unprocessed output, useful for debugging and advanced users.
+    
+    Examples:
+    - aditi vale                    # Run on configured paths with JSON output
+    - aditi vale --output=line      # Use line output format
+    - aditi vale file.adoc          # Check specific file
+    - aditi vale --no-pretty        # JSON without pretty printing
+    """
+    setup_logging(verbose)
+    vale_command(paths, output_format, pretty)
 
 
 def version_callback(value: bool) -> None:

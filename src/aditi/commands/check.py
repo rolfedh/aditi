@@ -72,9 +72,14 @@ def check_command(
         if path.is_file() and path.suffix == ".adoc":
             adoc_files.append(path)
         elif path.is_dir():
-            # Find all .adoc files recursively, excluding symlinks
+            # Find all .adoc files recursively, handling symlinks based on config
             for adoc_file in path.rglob("*.adoc"):
-                if not adoc_file.is_symlink():
+                if config.ignore_symlinks:
+                    # Only add if it's NOT a symlink
+                    if not adoc_file.is_symlink():
+                        adoc_files.append(adoc_file)
+                else:
+                    # Add all files (including symlinks)
                     adoc_files.append(adoc_file)
                     
     if not adoc_files:

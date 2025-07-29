@@ -176,7 +176,7 @@ class ContentTypeRule(Rule):
             # Insert 2-3 lines before the title
             insert_line = max(1, title_line - 3)
             
-        # Create the attribute line
+        # Create the attribute line with blank line after
         attribute_line = f":_mod-docs-content-type: {content_type}\n"
         
         # Determine the fix based on existing attributes
@@ -190,6 +190,17 @@ class ContentTypeRule(Rule):
             if line_num <= len(lines):
                 current_line = lines[line_num - 1]
                 
+                # Check if next line exists and add blank line if needed
+                lines = file_content.splitlines(keepends=True)
+                replacement_text = attribute_line.rstrip()
+                
+                # Check if we need to add a blank line after the attribute
+                if line_num < len(lines):
+                    next_line = lines[line_num] if line_num < len(lines) else ""
+                    # If next line is not empty, add a blank line
+                    if next_line.strip():
+                        replacement_text += "\n"
+                
                 # Create replacement text
                 if content_type == "TBD":
                     description = "Replace with valid content type attribute (TBD placeholder)"
@@ -198,7 +209,7 @@ class ContentTypeRule(Rule):
                     
                 fix = Fix(
                     violation=violation,
-                    replacement_text=attribute_line.rstrip(),
+                    replacement_text=replacement_text,
                     confidence=0.8 if content_type != "TBD" else 0.5,
                     requires_review=True,
                     description=description
@@ -211,6 +222,16 @@ class ContentTypeRule(Rule):
                 return fix
         else:
             # Insert new attribute
+            lines = file_content.splitlines(keepends=True)
+            
+            # Check if we need to add a blank line after the attribute
+            replacement_text = attribute_line
+            if insert_line <= len(lines):
+                next_line = lines[insert_line - 1] if insert_line <= len(lines) else ""
+                # If next line is not empty, add a blank line
+                if next_line.strip():
+                    replacement_text += "\n"
+            
             if content_type == "TBD":
                 description = "Insert content type attribute with TBD placeholder"
             else:
@@ -218,7 +239,7 @@ class ContentTypeRule(Rule):
                 
             fix = Fix(
                 violation=violation,
-                replacement_text=attribute_line,
+                replacement_text=replacement_text,
                 confidence=0.8 if content_type != "TBD" else 0.5,
                 requires_review=True,
                 description=description

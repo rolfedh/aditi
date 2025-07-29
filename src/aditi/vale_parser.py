@@ -93,6 +93,9 @@ class ValeParser:
         # Vale output is a dictionary with file paths as keys
         for file_path_str, file_data in vale_results.items():
             file_path = Path(file_path_str)
+            # Convert relative paths back to absolute paths
+            if not file_path.is_absolute():
+                file_path = Path.cwd() / file_path
             
             # Handle both dictionary format (with "Alerts" key) and array format
             if isinstance(file_data, dict):

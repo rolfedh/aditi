@@ -170,8 +170,17 @@ class RuleProcessor:
             JSON output from Vale or None on error
         """
         try:
-            # Convert paths to strings
-            path_args = [str(p) for p in file_paths]
+            # Convert paths to relative paths from current working directory
+            # since the container mounts the project root at /docs
+            project_root = Path.cwd()
+            path_args = []
+            for p in file_paths:
+                try:
+                    rel_path = p.relative_to(project_root)
+                    path_args.append(str(rel_path))
+                except ValueError:
+                    # If file is outside project root, use absolute path
+                    path_args.append(str(p))
             
             # Run Vale with JSON output
             output = self.vale_container.run_vale(
@@ -358,8 +367,19 @@ class RuleProcessor:
                     for rule_name in rules_of_type:
                         count = rule_counts[rule_name]
                         console.print(f"  {rule_name} ({count} {'issue' if count == 1 else 'issues'})")
-                        
-                    console.print()
+                    console.print()  # Blank line after each section
+            
+            # Show unimplemented rules
+            implemented_rules = {rule.name for rule in rules}
+            unimplemented_rules = [name for name in rule_counts.keys() 
+                                 if name not in implemented_rules]
+            
+            if unimplemented_rules:
+                console.print("❓ [bold]Unimplemented Rules[/bold]")
+                for rule_name in sorted(unimplemented_rules):
+                    count = rule_counts[rule_name]
+                    console.print(f"  {rule_name} ({count} {'issue' if count == 1 else 'issues'})")
+                console.print()  # Blank line after unimplemented rules section
                     
         # Summary statistics
         console.print("📈 [bold]Summary:[/bold]")
