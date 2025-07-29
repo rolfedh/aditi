@@ -41,7 +41,7 @@ jobs:
       - name: Run blog post validation tests
         run: |
           echo "🔍 Running blog post validation tests..."
-          python -m pytest tests/test_blog_post_validation.py -v --no-cov
+          python -m pytest tests/test_blog_post_validation.py -v -o addopts=""
       
       - name: Run standalone validation check
         run: |
