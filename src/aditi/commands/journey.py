@@ -32,11 +32,31 @@ RULE_PROCESSING_ORDER = [
     # Warning-level rules
     ("ExampleBlock", "warning", "DITA 1.3 allows the <example> element to appear only within the main body of the topic. Do not use example blocks in sections, within other blocks, or as part of lists."),
     ("NestedSection", "warning", "DITA 1.3 allows the <section> element to appear only within the main body of the topic. If a level 2 section is needed, move it to a separate file."),
+    ("AdmonitionTitle", "warning", "DITA 1.3 does not support titles on note elements. Consider restructuring admonition blocks with titles."),
+    ("AuthorLine", "warning", "Add an empty line after the document title to improve DITA conversion. This helps separate title metadata from content."),
+    ("BlockTitle", "warning", "DITA 1.3 only supports titles on specific block elements. Consider restructuring or removing unsupported block titles."),
+    ("CrossReference", "warning", "DITA cross-references should be limited to the current document. External cross-references may need restructuring."),
+    ("DiscreteHeading", "warning", "Discrete headings don't have direct DITA equivalents. Consider using regular sections or restructuring content."),
+    ("EquationFormula", "warning", "DITA conversion doesn't support LaTeX or AsciiMath equations. Consider converting to images or MathML."),
+    ("LineBreak", "warning", "DITA prefers semantic markup over manual line breaks. Consider using paragraphs or other block elements."),
+    ("LinkAttribute", "warning", "DITA may not resolve attribute references in link URLs correctly. Use direct URLs or restructure links."),
+    ("PageBreak", "warning", "DITA doesn't support page breaks like print formats. Consider restructuring content into logical sections or topics."),
+    ("RelatedLinks", "warning", "DITA has specific requirements for related links formatting. Ensure links follow DITA conventions for proper conversion."),
+    ("SidebarBlock", "warning", "DITA doesn't have direct sidebar equivalents. Consider restructuring into separate topics or sections."),
+    ("TableFooter", "warning", "DITA 1.3 doesn't support table footers. Consider moving footer content to table caption or following content."),
+    ("ThematicBreak", "warning", "DITA doesn't have direct thematic break equivalents. Consider restructuring content into logical sections or topics."),
 
     # Suggestion-level rules
     ("TaskSection", "suggestion", "DITA 1.3 does not allow sections in a task topic. If a section is needed, move it to a separate file."),
     ("TaskExample", "suggestion", "DITA 1.3 allows only one <example> element in a task topic. If multiple examples are needed, combine them in a single example block."),
-    ("ShortDescription", "suggestion", "Assign [role=\"_abstract\"] to a paragraph to use it as <shortdesc> in DITA."),
+    ("TaskStep", "suggestion", "DITA task steps should contain simple instructions. Complex content may need to be moved to separate topics or simplified."),
+    ("TaskTitle", "suggestion", "DITA task titles should clearly describe the task using imperative verbs (e.g., 'Install the software', 'Configure settings')."),
+    ("TaskDuplicate", "suggestion", "DITA task topics should avoid duplicate content. Consider consolidating redundant steps or using cross-references."),
+    ("ShortDescription", "suggestion", "DITA topics require a short description element. In AsciiDoc, add [role=\"_abstract\"] above a paragraph to create one."),
+    ("AttributeReference", "suggestion", "Informational: Lists attribute references that may need attention during DITA conversion."),
+    ("ConditionalCode", "suggestion", "Informational: Identifies conditional statements that may need special handling during DITA conversion."),
+    ("IncludeDirective", "suggestion", "Informational: Lists include directives that may need attention during DITA conversion."),
+    ("TagDirective", "suggestion", "Informational: Identifies tag directives that may need attention during DITA conversion."),
 ]
 
 

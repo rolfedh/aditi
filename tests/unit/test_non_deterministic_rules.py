@@ -7,6 +7,10 @@ from aditi.rules.example_block import ExampleBlockRule
 from aditi.rules.nested_section import NestedSectionRule
 from aditi.rules.task_example import TaskExampleRule
 from aditi.rules.task_section import TaskSectionRule
+from aditi.rules.short_description import ShortDescriptionRule
+from aditi.rules.task_step import TaskStepRule
+from aditi.rules.task_title import TaskTitleRule
+from aditi.rules.task_duplicate import TaskDuplicateRule
 from aditi.rules import FixType
 from aditi.vale_parser import Violation, Severity
 
@@ -218,3 +222,215 @@ class TestTaskSectionRule:
         assert fix.replacement_text == "// AsciiDocDITA Task topics should not have sections"
         assert fix.confidence == 1.0
         assert fix.requires_review is True
+
+
+class TestShortDescriptionRule:
+    """Test the ShortDescription rule."""
+    
+    def test_rule_properties(self):
+        """Test rule properties."""
+        rule = ShortDescriptionRule()
+        assert rule.name == "ShortDescription"
+        assert rule.fix_type == FixType.NON_DETERMINISTIC
+        assert "short description element" in rule.description
+        assert rule.dependencies == []
+    
+    def test_can_fix(self):
+        """Test can_fix method."""
+        rule = ShortDescriptionRule()
+        
+        # Should fix ShortDescription violations
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            rule_name="ShortDescription",
+            line=5,
+            column=1,
+            message="DITA topics require a short description element",
+            severity=Severity.SUGGESTION,
+            original_text="= Title"
+        )
+        assert rule.can_fix(violation) is True
+        
+        # Should not fix other violations
+        violation.rule_name = "SomeOtherRule"
+        assert rule.can_fix(violation) is False
+    
+    def test_generate_fix(self):
+        """Test fix generation."""
+        rule = ShortDescriptionRule()
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            rule_name="ShortDescription",
+            line=5,
+            column=1,
+            message="DITA topics require a short description element",
+            severity=Severity.SUGGESTION,
+            original_text="= Title"
+        )
+        
+        fix = rule.generate_fix(violation, "dummy content")
+        
+        assert fix is not None
+        assert fix.replacement_text == "// AsciiDocDITA DITA topics require a short description element"
+        assert fix.confidence == 1.0
+        assert fix.requires_review is True
+        assert fix.description == "Flag for manual review"
+
+
+class TestTaskStepRule:
+    """Test the TaskStep rule."""
+    
+    def test_rule_properties(self):
+        """Test rule properties."""
+        rule = TaskStepRule()
+        assert rule.name == "TaskStep"
+        assert rule.fix_type == FixType.NON_DETERMINISTIC
+        assert "simple instructions" in rule.description
+        assert rule.dependencies == ["ContentType"]
+    
+    def test_can_fix(self):
+        """Test can_fix method."""
+        rule = TaskStepRule()
+        
+        # Should fix TaskStep violations
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskStep",
+            line=25,
+            column=1,
+            message="Task steps should contain simple instructions",
+            severity=Severity.SUGGESTION,
+            original_text=". Complex step with multiple parts"
+        )
+        assert rule.can_fix(violation) is True
+        
+        # Should not fix other violations
+        violation.rule_name = "SomeOtherRule"
+        assert rule.can_fix(violation) is False
+    
+    def test_generate_fix(self):
+        """Test fix generation."""
+        rule = TaskStepRule()
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskStep",
+            line=25,
+            column=1,
+            message="Task steps should contain simple instructions",
+            severity=Severity.SUGGESTION,
+            original_text=". Complex step with multiple parts"
+        )
+        
+        fix = rule.generate_fix(violation, "dummy content")
+        
+        assert fix is not None
+        assert fix.replacement_text == "// AsciiDocDITA Task steps should contain simple instructions"
+        assert fix.confidence == 1.0
+        assert fix.requires_review is True
+        assert fix.description == "Flag for manual review"
+
+
+class TestTaskTitleRule:
+    """Test the TaskTitle rule."""
+    
+    def test_rule_properties(self):
+        """Test rule properties."""
+        rule = TaskTitleRule()
+        assert rule.name == "TaskTitle"
+        assert rule.fix_type == FixType.NON_DETERMINISTIC
+        assert "imperative verbs" in rule.description
+        assert rule.dependencies == ["ContentType"]
+    
+    def test_can_fix(self):
+        """Test can_fix method."""
+        rule = TaskTitleRule()
+        
+        # Should fix TaskTitle violations
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskTitle",
+            line=1,
+            column=1,
+            message="Task titles should use imperative verbs",
+            severity=Severity.SUGGESTION,
+            original_text="= Installing Software"
+        )
+        assert rule.can_fix(violation) is True
+        
+        # Should not fix other violations
+        violation.rule_name = "SomeOtherRule"
+        assert rule.can_fix(violation) is False
+    
+    def test_generate_fix(self):
+        """Test fix generation."""
+        rule = TaskTitleRule()
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskTitle",
+            line=1,
+            column=1,
+            message="Task titles should use imperative verbs",
+            severity=Severity.SUGGESTION,
+            original_text="= Installing Software"
+        )
+        
+        fix = rule.generate_fix(violation, "dummy content")
+        
+        assert fix is not None
+        assert fix.replacement_text == "// AsciiDocDITA Task titles should use imperative verbs"
+        assert fix.confidence == 1.0
+        assert fix.requires_review is True
+        assert fix.description == "Flag for manual review"
+
+
+class TestTaskDuplicateRule:
+    """Test the TaskDuplicate rule."""
+    
+    def test_rule_properties(self):
+        """Test rule properties."""
+        rule = TaskDuplicateRule()
+        assert rule.name == "TaskDuplicate"
+        assert rule.fix_type == FixType.NON_DETERMINISTIC
+        assert "duplicate content" in rule.description
+        assert rule.dependencies == ["ContentType"]
+    
+    def test_can_fix(self):
+        """Test can_fix method."""
+        rule = TaskDuplicateRule()
+        
+        # Should fix TaskDuplicate violations
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskDuplicate",
+            line=20,
+            column=1,
+            message="Task topics should avoid duplicate content",
+            severity=Severity.SUGGESTION,
+            original_text=". Repeated step"
+        )
+        assert rule.can_fix(violation) is True
+        
+        # Should not fix other violations
+        violation.rule_name = "SomeOtherRule"
+        assert rule.can_fix(violation) is False
+    
+    def test_generate_fix(self):
+        """Test fix generation."""
+        rule = TaskDuplicateRule()
+        violation = Violation(
+            file_path=Path("proc-test.adoc"),
+            rule_name="TaskDuplicate",
+            line=20,
+            column=1,
+            message="Task topics should avoid duplicate content",
+            severity=Severity.SUGGESTION,
+            original_text=". Repeated step"
+        )
+        
+        fix = rule.generate_fix(violation, "dummy content")
+        
+        assert fix is not None
+        assert fix.replacement_text == "// AsciiDocDITA Task topics should avoid duplicate content"
+        assert fix.confidence == 1.0
+        assert fix.requires_review is True
+        assert fix.description == "Flag for manual review"
