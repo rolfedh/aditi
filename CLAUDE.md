@@ -17,13 +17,14 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 - GitHub CLI (`gh`) if GitHub support is needed
 
 ### Key Dependencies
-- Container image: `docker.io/jdkato/vale:latest` (Official Vale linter)
-- AsciiDocDITA styles: Downloaded automatically via Vale's package system
-- Typer: Modern CLI framework with type hints
-- Rich: Enhanced console output with progress bars
-- Jekyll with Just the Docs theme for documentation
-- GitHub Actions for automated workflows
-- PyPI for distribution
+- **Container image**: `docker.io/jdkato/vale:latest` (Official Vale linter)
+- **AsciiDocDITA styles**: Downloaded automatically via Vale's package system
+- **Python CLI**: Typer framework with Rich progress indicators
+- **Documentation**: Jekyll with Just the Docs theme
+- **Testing**: pytest with PyYAML for front matter validation
+- **CI/CD**: GitHub Actions for deployment and validation workflows
+- **Quality Assurance**: Comprehensive blog post validation test suite
+- **Distribution**: PyPI packaging with modern pyproject.toml
 
 ## Architecture
 
@@ -50,19 +51,26 @@ Rules are grouped by dependencies - ContentType must run before rules that depen
 - Test AsciiDocDITA rules: `python test_asciidocdita_rules.py`
 - Initialize project with Vale: `aditi init` (when CLI is built)
 
+### Blog Post Management
+- **Validate blog posts**: `python tests/test_blog_post_validation.py`
+- **Run specific validation tests**: `python -m pytest tests/test_blog_post_validation.py -v`
+- **Create new post**: Follow filename pattern `YYYY-MM-DD-HHMM-title.md`
+- **Check front matter**: Ensure all required fields are present
+
 ### GitHub Pages Development
-- Local development: `cd docs && bundle exec jekyll serve`
-- The site uses Just the Docs theme with custom styling
-- Images automatically get drop shadows via custom CSS
-- Recent commits section auto-updates via GitHub Actions
+- **Local development**: `cd docs && bundle exec jekyll serve`
+- **Validation URL**: `http://localhost:4000/aditi/`
+- **Theme**: Just the Docs with custom styling and drop shadows
+- **Auto-updates**: Recent commits section via GitHub Actions
+- **Link testing**: Verify `/aditi/` prefix for internal links
 
 ### Python Development
-Current implementation includes:
-- Vale container integration with Podman/Docker support
-- Typer CLI framework with Rich progress indicators
-- AsciiDocDITA rule downloading via Vale's package system
-- Comprehensive test scripts for validation
-- Standard Python packaging tools for building and distribution
+- **Package management**: Modern pyproject.toml with development dependencies
+- **CLI framework**: Typer with Rich progress indicators
+- **Container integration**: Podman/Docker support for Vale
+- **Test suite**: Unit, integration, and blog post validation tests
+- **Quality assurance**: Blog post validation prevents Jekyll deployment failures
+- **Dependencies**: PyYAML added for YAML parsing in tests
 
 ## Important Rules
 
@@ -122,6 +130,14 @@ User configuration stored in `~/aditi-data/config.json`:
 - ✅ Package structure with proper exports
 - ✅ Working CLI with placeholder commands
 
+### Completed (Documentation & Quality Assurance)
+- ✅ Jekyll front matter standardization across all blog posts
+- ✅ Blog post validation test suite with regression prevention
+- ✅ GitHub Actions workflow for automated blog post validation
+- ✅ Comprehensive documentation with test README
+- ✅ Template file safety and exclusion management
+- ✅ GitHub Pages deployment reliability improvements
+
 ### Next Phases
 - **Phase 2**: Rule Engine Implementation (parsing Vale output, applying fixes)
 - **Phase 3**: CLI Experience (journey command, interactive workflows)  
@@ -143,7 +159,18 @@ src/aditi/
 tests/
 ├── unit/                     # Unit tests for all modules
 ├── integration/              # CLI integration tests
+├── test_blog_post_validation.py  # Jekyll front matter validation
+├── README.md                 # Test documentation
 └── conftest.py              # Shared test fixtures
+docs/
+├── _posts/                   # Blog posts with standardized front matter
+├── _config.yml              # Jekyll config with proper exclusions
+├── post-template.md          # Safe template file
+└── assets/                   # Blog assets and images
+.github/workflows/
+├── jekyll-gh-pages.yml       # GitHub Pages deployment
+├── update-commits.yml        # Recent commits automation
+└── validate-blog-posts.yml   # Blog post validation CI
 ```
 
 ## Role and Capabilities
@@ -192,26 +219,94 @@ permalink: /design/document-name/
 
 ## Post Writing Guidelines
 
-### Automated Blog Post Creation
-Use the helper script for consistent filenames and timestamps:
-```bash
-./scripts/new-blog-post.sh "Your Blog Post Title"
+### Standardized Front Matter Format
+**CRITICAL**: All blog posts must use this exact front matter structure to prevent Jekyll build failures:
+
+```yaml
+---
+layout: post
+title: "Your Blog Post Title Here"
+date: YYYY-MM-DD HH:MM:SS -0400
+author: Author Name
+tags: [tag1, tag2, tag3]
+summary: "Brief 1-2 sentence summary for listings"
+---
 ```
 
-This automatically creates:
-- Correct filename: `YYYY-MM-DD-HHMM-post-title.md`
-- Proper timestamp in front matter with current timezone
-- Template content based on `docs/_posts/YYYY-MM-DD-post-template.md`
+### Blog Post Validation
+A comprehensive test suite prevents Jekyll deployment failures:
+- **Automated validation**: `python tests/test_blog_post_validation.py`
+- **GitHub Actions**: Validates all posts on push/PR
+- **Catches issues**: Missing fields, invalid dates, placeholder content
+- **Template safety**: Ensures template files are excluded from processing
 
 ### Manual Blog Post Creation
-If creating manually:
 1. **Filename Format**: `YYYY-MM-DD-HHMM-post-title.md`
    - Get timestamp: `date '+%Y-%m-%d-%H%M'`
-   - Example: `2025-07-27-1423-implementing-new-feature.md`
+   - Example: `2025-07-29-1400-implementing-new-feature.md`
 
-2. **Front Matter Timestamp**: `YYYY-MM-DD HH:MM:SS -0400`
-   - Get timestamp: `date '+%Y-%m-%d %H:%M:%S %z'`  
-   - Example: `2025-07-27 14:23:45 -0400`
+2. **Front Matter Requirements**:
+   - **layout**: Must be `post`
+   - **title**: In quotes, descriptive
+   - **date**: `YYYY-MM-DD HH:MM:SS -0400` format (get with `date '+%Y-%m-%d %H:%M:%S %z'`)
+   - **author**: Full name or team
+   - **tags**: Array format `[tag1, tag2, tag3]`
+   - **summary**: Brief description for blog listings
 
-3. **Always use** `docs/_posts/YYYY-MM-DD-post-template.md` as template
-4. **IMPORTANT**: Follow the link guidelines above when creating internal links in blog posts
+3. **Template Usage**: Use `docs/_posts/post-template.md` as reference
+4. **Link Guidelines**: Follow `/aditi/` prefix rules for internal links
+5. **Validation**: Run `python tests/test_blog_post_validation.py` before committing
+
+## Recent Development Focus (July 2025)
+
+### Jekyll Front Matter Crisis & Resolution
+**Problem**: GitHub Pages deployment failures due to inconsistent blog post front matter and template files with placeholder dates.
+
+**Root Cause Analysis**:
+- Template files contained `date: YYYY-MM-DD HH:MM:SS -0400` causing Jekyll parsing errors
+- Inconsistent front matter formats across posts (some missing `layout: post`)
+- Mixed usage of `categories` vs `tags` fields  
+- Hidden draft files not excluded from Jekyll processing
+
+**Solution Implementation**:
+1. **Standardized all blog posts** to consistent front matter format
+2. **Created comprehensive validation suite** (`tests/test_blog_post_validation.py`)
+3. **Implemented GitHub Actions workflow** for automated validation
+4. **Updated Jekyll configuration** with proper exclusion rules
+5. **Fixed template management** with safe placeholder handling
+
+**Key Lessons Learned**:
+- Jekyll is strict about date formats - even template placeholders break builds
+- Front matter consistency prevents subtle deployment issues
+- Automated validation catches regressions before they reach production
+- Template files need explicit exclusion from Jekyll processing
+- Comprehensive testing prevents recurring issues
+
+### Blog Post Validation Test Suite
+**Prevents these regression issues**:
+- ❌ Invalid date parsing from placeholder templates
+- ❌ Missing required front matter fields
+- ❌ Inconsistent front matter structure
+- ❌ Dangerous template files in processing pipeline
+- ❌ Filename convention violations
+- ❌ Date consistency mismatches
+
+**Validation Coverage**:
+- Front matter structure and required fields
+- Date format validation (`YYYY-MM-DD HH:MM:SS ±HHMM`)
+- Filename conventions (`YYYY-MM-DD-HHMM-title.md`)
+- Jekyll configuration safety
+- Template and draft file exclusions
+
+### Impact on Development Workflow
+- **Reliable deployments**: GitHub Pages builds consistently succeed
+- **Quality assurance**: Blog posts follow standardized conventions
+- **Developer confidence**: Validation catches issues before deployment
+- **Documentation consistency**: All posts use uniform front matter
+- **Regression prevention**: Test suite prevents recurring Jekyll issues
+
+# important-instruction-reminders
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
