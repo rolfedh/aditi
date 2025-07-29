@@ -22,7 +22,7 @@ Aditi helps technical writers identify and fix compatibility issues when migrati
 ### Quick Install
 
 ```bash
-pip install aditi
+pip install --upgrade aditi
 ```
 
 ### System Requirements
@@ -108,7 +108,7 @@ aditi fix --non-interactive
 mkdir my-dita-migration && cd my-dita-migration
 
 # Install and initialize
-pip install aditi
+pip install --upgrade aditi
 aditi init
 
 # Set up paths (follow prompts)

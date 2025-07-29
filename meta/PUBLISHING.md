@@ -52,7 +52,7 @@ If you prefer to publish manually:
 
 1. **Verify installation**:
    ```bash
-   pip install aditi
+   pip install --upgrade aditi
    aditi --version
    ```
 

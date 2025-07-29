@@ -62,4 +62,4 @@ else
 fi
 
 echo "🎉 Successfully uploaded to PyPI!"
-echo "Install with: pip install aditi"
+echo "Upgrade with: pip install --upgrade aditi"
