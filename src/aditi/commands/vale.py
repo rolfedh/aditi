@@ -130,7 +130,8 @@ def vale_command(
         else:
             # Use specified format directly
             output = vale_container.run_vale_raw([f"--output={output_format}"] + path_args)
-            console.print(output)
+            # For non-JSON output, print raw text without Rich formatting
+            print(output, end='')
             
     except Exception as e:
         console.print(f"[red]Error running Vale:[/red] {e}")
