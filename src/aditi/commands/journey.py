@@ -131,6 +131,24 @@ def configure_repository() -> bool:
     Returns:
         True if configuration was successful, False otherwise
     """
+    # Initialize configuration manager
+    config_manager = ConfigManager()
+    config = config_manager.load_config()
+    
+    # If no configuration exists, create one automatically
+    if not config_manager.config_file.exists():
+        console.print("\n📝 Creating configuration for the first time...")
+        console.print("🔍 Scanning for AsciiDoc documentation directories...")
+        config = config_manager.create_default_config(scan_for_docs=True)
+        
+        if config.allowed_paths:
+            console.print(f"\n✅ Found documentation in {len(config.allowed_paths)} location(s):")
+            for path in config.allowed_paths:
+                console.print(f"  • {path}")
+        else:
+            console.print("\n[yellow]No .adoc files found in subdirectories.[/yellow]")
+            console.print("We'll help you configure the paths in the next steps.")
+    
     # Check if we're in a git repository root
     current_dir = Path.cwd()
     console.print(f"\n📁 Current directory: [cyan]{current_dir}[/cyan]")

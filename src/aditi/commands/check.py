@@ -46,23 +46,50 @@ def check_command(
     config_manager = ConfigManager()
     config = config_manager.load_config()
     
+    # If no configuration exists, create one automatically
+    if not config_manager.config_file.exists():
+        console.print("📝 Creating configuration for the first time...")
+        console.print("🔍 Scanning for AsciiDoc documentation directories...")
+        config = config_manager.create_default_config(scan_for_docs=True)
+        
+        if config.allowed_paths:
+            console.print(f"\n✅ Found documentation in {len(config.allowed_paths)} location(s):")
+            for path in config.allowed_paths:
+                console.print(f"  • {path}")
+        else:
+            console.print("\n[yellow]No .adoc files found in subdirectories.[/yellow]")
+            console.print("You can specify paths directly: [bold]aditi check path/to/docs[/bold]")
+    
     # Determine which paths to check
     if not paths:
         # Use configured directories
         if not config.allowed_paths:
             console.print("[yellow]No paths configured for checking.[/yellow]")
-            console.print("To fix this, run: [bold]aditi journey[/bold] to configure your repository paths.")
+            console.print("To add paths, run: [bold]aditi journey[/bold] or specify paths directly:")
+            console.print("  [bold]aditi check path/to/docs[/bold]")
             raise typer.Exit(1)
         paths_to_check = config.allowed_paths
     else:
-        # Validate paths against configuration
-        paths_to_check = []
+        # If paths are provided and no config was just created, add them to allowed paths
         skipped_paths = []
-        for path in paths:
-            if config.is_path_allowed(path):
-                paths_to_check.append(path)
-            else:
-                skipped_paths.append(path)
+        if not config.allowed_paths or all(not config.is_path_allowed(p) for p in paths):
+            console.print("\n🔧 Adding specified paths to configuration...")
+            for path in paths:
+                if path.exists():
+                    resolved_path = path.resolve()
+                    if resolved_path not in config.allowed_paths:
+                        config.allowed_paths.append(resolved_path)
+                        console.print(f"  ✅ Added: {path}")
+            config_manager.save_config(config)
+            paths_to_check = paths
+        else:
+            # Validate paths against configuration
+            paths_to_check = []
+            for path in paths:
+                if config.is_path_allowed(path):
+                    paths_to_check.append(path)
+                else:
+                    skipped_paths.append(path)
                 
         # Show informative message about skipped paths
         if skipped_paths:

@@ -380,6 +380,54 @@ class ConfigManager:
         if self.session_file.exists():
             self.session_file.unlink()
             logger.info("Cleared session state")
+            
+    def create_default_config(self, scan_for_docs: bool = True) -> AditiConfig:
+        """Create a default configuration with automatic path discovery.
+        
+        Args:
+            scan_for_docs: Whether to scan for documentation directories
+            
+        Returns:
+            Newly created configuration
+        """
+        from .scanner import DirectoryScanner
+        
+        config = AditiConfig()
+        current_dir = Path.cwd()
+        
+        if scan_for_docs:
+            # Scan for .adoc files in subdirectories
+            scanner = DirectoryScanner(ignore_symlinks=True)
+            adoc_dirs = scanner.scan_for_adoc_files(current_dir)
+            
+            if adoc_dirs:
+                # Find documentation roots (common parent directories)
+                doc_roots = scanner.find_documentation_roots(adoc_dirs)
+                
+                # Add the most significant documentation roots as allowed paths
+                for path, direct_count, total_count in doc_roots:
+                    config.allowed_paths.append(path)
+                    logger.info(f"Added documentation directory to allowed paths: {path} ({total_count} .adoc files)")
+                    
+                # If no roots found but we have directories, add them all
+                if not config.allowed_paths and adoc_dirs:
+                    for path in sorted(adoc_dirs.keys())[:5]:  # Limit to top 5 directories
+                        config.allowed_paths.append(path)
+                        logger.info(f"Added directory to allowed paths: {path}")
+            else:
+                # No .adoc files found, add current directory as fallback
+                config.allowed_paths.append(current_dir)
+                logger.info(f"No .adoc files found. Added current directory to allowed paths: {current_dir}")
+        else:
+            # Just add current directory without scanning
+            config.allowed_paths.append(current_dir)
+            logger.info(f"Added current directory to allowed paths: {current_dir}")
+            
+        # Save the configuration
+        self._config = config
+        self.save_config()
+        
+        return config
 
     @property
     def config(self) -> AditiConfig:
