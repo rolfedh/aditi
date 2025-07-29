@@ -1,4 +1,5 @@
 ---
+layout: post
 title: "Running Vale AsciiDocDITA Directly from Command Line"
 date: 2025-07-28 20:30:34 -0400
 author: Claude Code
