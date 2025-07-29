@@ -101,7 +101,11 @@ fi
 
 if [[ $REPLY =~ ^[Yy]$ ]]; then
     echo "📤 Uploading to TestPyPI..."
-    python -m twine upload --repository testpypi dist/*
+    if command -v twine &> /dev/null; then
+        twine upload --repository testpypi dist/*
+    else
+        python -m twine upload --repository testpypi dist/*
+    fi
     echo ""
     echo "✅ Uploaded to TestPyPI!"
     echo "Test installation with: pip install -i https://test.pypi.org/simple/ aditi"
@@ -116,7 +120,11 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 echo "📤 Uploading to PyPI..."
-python -m twine upload dist/*
+if command -v twine &> /dev/null; then
+    twine upload dist/*
+else
+    python -m twine upload dist/*
+fi
 
 echo ""
 echo "🎉 Success! Aditi has been published to PyPI!"
