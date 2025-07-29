@@ -28,6 +28,7 @@ class ValeContainer:
         """
         self.runtime = "podman" if use_podman else "docker"
         self._check_runtime_available()
+        self._image_pulled = False  # Cache image pull status
 
     def _check_runtime_available(self) -> None:
         """Check if container runtime is available."""
@@ -61,6 +62,10 @@ class ValeContainer:
 
     def ensure_image_exists(self) -> None:
         """Ensure the Vale image exists locally, pull if needed."""
+        # Return early if we've already verified the image exists
+        if self._image_pulled:
+            return
+            
         try:
             subprocess.run(
                 [self.runtime, "image", "inspect", self.VALE_IMAGE],
@@ -69,9 +74,11 @@ class ValeContainer:
                 text=True
             )
             logger.debug(f"Vale image {self.VALE_IMAGE} already exists")
+            self._image_pulled = True
         except subprocess.CalledProcessError:
             logger.info(f"Vale image not found locally, pulling...")
             self.pull_image()
+            self._image_pulled = True
 
     def init_vale_config(self, project_root: Path) -> None:
         """Initialize Vale configuration in the project.
@@ -160,10 +167,13 @@ class ValeContainer:
                 f"Target path {abs_target} is not within project root {abs_project_root}"
             )
 
-        # Run Vale in container
+        # Run Vale in container with resource limits and timeout
         cmd = [
             self.runtime, "run", "--rm",
-            "-v", f"{abs_project_root}:/docs",
+            "--memory=512m",      # Limit memory usage
+            "--cpus=2",           # Limit CPU usage  
+            "--security-opt=no-new-privileges",  # Security hardening
+            "-v", f"{abs_project_root}:/docs:ro",  # Read-only mount for security
             "-w", "/docs",
             self.VALE_IMAGE,
             "--output", output_format,
@@ -177,7 +187,8 @@ class ValeContainer:
                 cmd,
                 check=False,  # Vale returns non-zero on violations
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=300   # 5-minute timeout for large files
             )
 
             if output_format == "JSON":
@@ -190,21 +201,25 @@ class ValeContainer:
             else:
                 return {"output": result.stdout, "errors": result.stderr}
 
+        except subprocess.TimeoutExpired:
+            logger.error(f"Vale execution timed out after 5 minutes for {target_path}")
+            raise RuntimeError(f"Vale processing timed out - {target_path} may be too large or complex")
         except subprocess.CalledProcessError as e:
             logger.error(f"Vale command failed: {e.stderr}")
             raise
 
-    def run_vale(self, args: list[str]) -> str:
-        """Run Vale with specified arguments.
+    def run_vale_raw(self, args: list[str], project_root: Optional[Path] = None) -> str:
+        """Run Vale with specified arguments and return raw output.
         
         Args:
             args: Command line arguments for Vale
+            project_root: Project root directory. Defaults to current directory.
             
         Returns:
             Vale output as string
         """
-        # Find project root (current directory)
-        project_root = Path.cwd()
+        if project_root is None:
+            project_root = Path.cwd()
         
         # Ensure configuration exists
         if not (project_root / ".vale.ini").exists():
@@ -213,9 +228,11 @@ class ValeContainer:
                 "Run 'aditi init' first to set up Vale configuration."
             )
         
-        # Run Vale in container
+        # Run Vale in container with optimized flags
         cmd = [
-            self.runtime, "run", "--rm",
+            self.runtime, "run", "--rm", 
+            "--memory=512m",  # Limit memory usage
+            "--cpus=2",       # Limit CPU usage
             "-v", f"{project_root.absolute()}:/docs",
             "-w", "/docs",
             self.VALE_IMAGE,
@@ -228,7 +245,8 @@ class ValeContainer:
                 cmd,
                 check=False,  # Vale returns non-zero on violations
                 capture_output=True,
-                text=True
+                text=True,
+                timeout=300   # 5-minute timeout for large files
             )
             
             if result.stderr:
@@ -236,6 +254,9 @@ class ValeContainer:
                 
             return result.stdout
             
+        except subprocess.TimeoutExpired:
+            logger.error("Vale execution timed out after 5 minutes")
+            raise RuntimeError("Vale processing timed out - file may be too large")
         except subprocess.CalledProcessError as e:
             logger.error(f"Vale command failed: {e.stderr}")
             raise

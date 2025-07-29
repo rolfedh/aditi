@@ -107,14 +107,21 @@ class RuleRegistry:
         return result
     
     def auto_discover(self, package_path: Optional[Path] = None) -> None:
-        """Auto-discover and register rules from the rules package.
+        """Auto-discover and register rules from the rules package with caching.
         
         Args:
             package_path: Optional path to the rules package
         """
+        # Skip if already discovered to avoid repeated work
+        if self._rules:
+            return
+            
         if package_path is None:
             package_path = Path(__file__).parent
             
+        discovered_count = 0
+        failed_count = 0
+        
         # Import all modules in the rules package
         for module_info in pkgutil.iter_modules([str(package_path)]):
             if module_info.name in ['base', 'registry', '__init__']:
@@ -130,11 +137,21 @@ class RuleRegistry:
                         issubclass(attr, Rule) and 
                         attr != Rule and
                         not getattr(attr, '__abstractmethods__', None)):
-                        self.register(attr)
-                        console.print(f"[green]Registered rule:[/green] {attr().name}")
+                        try:
+                            self.register(attr)
+                            discovered_count += 1
+                        except Exception as e:
+                            console.print(f"[yellow]Warning: Failed to register rule {attr_name}:[/yellow] {e}")
+                            failed_count += 1
                         
             except Exception as e:
                 console.print(f"[yellow]Warning: Failed to load rule module {module_info.name}:[/yellow] {e}")
+                failed_count += 1
+        
+        # Show summary instead of individual messages for cleaner output
+        if discovered_count > 0:
+            console.print(f"[green]✅ Discovered {discovered_count} rules[/green]" + 
+                         (f" ({failed_count} failed)" if failed_count > 0 else ""))
 
 
 # Global registry instance

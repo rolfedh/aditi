@@ -37,31 +37,94 @@ class DirectoryScanner:
         if gitignore_path.exists():
             self._load_gitignore(gitignore_path)
         
-        # Walk the directory tree
-        for dirpath, dirnames, filenames in os.walk(root_path, followlinks=not self.ignore_symlinks):
-            current_dir = Path(dirpath)
-            
-            # Skip hidden directories and common build/vendor directories
-            dirnames[:] = [
-                d for d in dirnames 
-                if not d.startswith('.') 
-                and d not in {'node_modules', 'vendor', 'build', 'dist', 'target', '__pycache__'}
-            ]
-            
-            # Skip if path matches gitignore patterns
-            if self._should_ignore(current_dir, root_path):
-                dirnames.clear()  # Don't recurse into ignored directories
-                continue
-            
-            # Count .adoc files in current directory
-            adoc_count = sum(1 for f in filenames if f.endswith('.adoc') and not f.startswith('.'))
-            
-            if adoc_count > 0:
-                # Store relative path for display
-                rel_path = current_dir.relative_to(root_path)
-                adoc_dirs[rel_path] = adoc_count
+        # Walk the directory tree with error handling
+        try:
+            for dirpath, dirnames, filenames in os.walk(root_path, followlinks=not self.ignore_symlinks):
+                try:
+                    current_dir = Path(dirpath)
+                    
+                    # Check if directory is accessible
+                    if not current_dir.exists() or not os.access(current_dir, os.R_OK):
+                        console.print(f"[yellow]Warning: Cannot access directory {current_dir}[/yellow]")
+                        dirnames.clear()  # Don't recurse into inaccessible directories
+                        continue
+                    
+                    # Skip hidden directories and common build/vendor directories
+                    dirnames[:] = [
+                        d for d in dirnames 
+                        if not d.startswith('.') 
+                        and d not in {'node_modules', 'vendor', 'build', 'dist', 'target', '__pycache__', '.git'}
+                        and len(d) < 255  # Avoid extremely long directory names
+                    ]
+                    
+                    # Skip if path matches gitignore patterns
+                    if self._should_ignore(current_dir, root_path):
+                        dirnames.clear()  # Don't recurse into ignored directories
+                        continue
+                    
+                    # Count .adoc files in current directory with safety checks
+                    adoc_count = 0
+                    for f in filenames:
+                        if (f.endswith('.adoc') and not f.startswith('.') 
+                            and len(f) < 255 and self._is_safe_filename(f)):
+                            # Additional check to ensure the file is actually accessible
+                            file_path = current_dir / f
+                            try:
+                                if file_path.exists() and os.access(file_path, os.R_OK):
+                                    adoc_count += 1
+                            except (OSError, PermissionError):
+                                console.print(f"[yellow]Warning: Cannot access file {file_path}[/yellow]")
+                                continue
+                    
+                    if adoc_count > 0:
+                        try:
+                            # Store relative path for display
+                            rel_path = current_dir.relative_to(root_path)
+                            adoc_dirs[rel_path] = adoc_count
+                        except ValueError:
+                            # Handle case where current_dir is not relative to root_path
+                            console.print(f"[yellow]Warning: Path {current_dir} is not under {root_path}[/yellow]")
+                            continue
+                            
+                except (OSError, PermissionError) as e:
+                    console.print(f"[yellow]Warning: Error processing directory {dirpath}: {e}[/yellow]")
+                    continue
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Unexpected error in directory {dirpath}: {e}[/yellow]")
+                    continue
+                    
+        except (OSError, PermissionError) as e:
+            console.print(f"[red]Error: Cannot scan root directory {root_path}: {e}[/red]")
+            return {}
+        except Exception as e:
+            console.print(f"[red]Unexpected error during directory scan: {e}[/red]")
+            return {}
                 
         return adoc_dirs
+    
+    def _is_safe_filename(self, filename: str) -> bool:
+        """Check if filename is safe to process.
+        
+        Args:
+            filename: The filename to check
+            
+        Returns:
+            True if filename is safe, False otherwise
+        """
+        # Check for potentially dangerous filenames
+        dangerous_chars = {'\\', '|', ':', '*', '?', '"', '<', '>', '\0'}
+        if any(char in filename for char in dangerous_chars):
+            return False
+            
+        # Check for suspicious patterns
+        if filename.startswith(('..', '~')) or filename.endswith(('~', '.bak', '.tmp')):
+            return False
+            
+        # Check for control characters
+        if any(ord(char) < 32 for char in filename):
+            return False
+            
+        return True
     
     def find_documentation_roots(self, adoc_dirs: Dict[Path, int]) -> List[Tuple[Path, int, int]]:
         """Find common documentation root directories.

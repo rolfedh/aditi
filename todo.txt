@@ -1,0 +1,56 @@
+# Aditi Development TODO - Next 2 Hours
+Generated: 2025-07-29
+
+## 🎯 High Priority Tasks (Complete in Order)
+
+### 1. Test End-to-End User Experience (30 min)
+- [ ] Create a test AsciiDoc repository with sample files
+- [ ] Run `aditi init` to set up Vale configuration
+- [ ] Test `aditi journey` command with real files
+- [ ] Document any UX issues or confusing aspects
+- [ ] Verify all 27 rules work in practice
+
+### 2. Fix Critical Issues Found During Testing (30 min)
+- [ ] Address any errors from end-to-end testing
+- [ ] Improve error messages for common failure cases
+- [ ] Ensure graceful handling of edge cases
+- [ ] Test interruption handling (Ctrl+C) during operations
+
+### 3. Create Quick Start Guide (30 min)
+- [ ] Write docs/QUICKSTART.md with simple examples
+- [ ] Include common use cases and workflows
+- [ ] Add troubleshooting section for common issues
+- [ ] Create example AsciiDoc files that trigger each rule type
+
+### 4. Prepare for User Testing (30 min)
+- [ ] Update README.md with clear installation instructions
+- [ ] Create a feedback collection template (GitHub issue template)
+- [ ] List known limitations and future enhancements
+- [ ] Prepare announcement blog post draft
+
+## 🔧 Technical Debt (If Time Permits)
+- [ ] Remove duplicate dependencies in CLAUDE.md auto-generation
+- [ ] Add dry-run support to journey command
+- [ ] Improve progress indicators for long operations
+- [ ] Add --version flag that shows actual version from pyproject.toml
+
+## 📝 Documentation Tasks (If Time Permits)
+- [ ] Create animated GIF demo of journey command
+- [ ] Write comparison with other DITA migration tools
+- [ ] Document rule customization process
+- [ ] Create contributor guide
+
+## 🚀 Next Session Priorities
+1. User documentation polish
+2. Create video walkthrough
+3. Reach out to technical writing communities
+4. Plan beta testing program
+5. Set up user analytics/telemetry (with consent)
+
+## Notes
+- Focus on user experience validation - the code is solid but needs real-world testing
+- Prioritize documentation that helps users get started quickly
+- Collect specific examples where rules might need adjustment
+- Consider creating a Discord/Slack community for users
+
+Remember: The tool is technically complete. The next phase is about making it accessible and valuable to actual technical writers working with AsciiDoc to DITA migrations.

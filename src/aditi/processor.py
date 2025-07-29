@@ -5,7 +5,10 @@ and tracks changes made to AsciiDoc files.
 """
 
 import json
+import signal
 import shutil
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
@@ -80,9 +83,18 @@ class RuleProcessor:
         self.vale_parser = ValeParser()
         self.rule_registry = RuleRegistry()
         self._backup_dir: Optional[Path] = None
+        self._file_cache: Dict[Path, str] = {}  # Cache file contents to avoid re-reading
+        self._lock = threading.Lock()  # Thread safety for parallel processing
+        self._interrupted = False  # Track if processing was interrupted
+        self._cleanup_handlers: List[callable] = []  # Cleanup functions to call on interrupt
         
-        # Auto-discover and register rules
-        self.rule_registry.auto_discover()
+        # Auto-discover and register rules (only once)
+        if not hasattr(RuleProcessor, '_rules_discovered'):
+            self.rule_registry.auto_discover()
+            RuleProcessor._rules_discovered = True
+            
+        # Set up signal handlers for graceful shutdown
+        self._setup_signal_handlers()
         
     def process_files(self, file_paths: List[Path], dry_run: bool = True) -> ProcessingResult:
         """Process files through the rule pipeline.
@@ -123,7 +135,8 @@ class RuleProcessor:
             # Step 3: Group violations by file
             violations_by_file = self.vale_parser.group_by_file(violations)
             
-            # Step 4: Process each file
+            # Step 4: Process files with parallel processing for better performance
+            max_workers = min(4, len(violations_by_file))  # Limit parallelism
             with Progress(
                 SpinnerColumn(),
                 TextColumn("[progress.description]{task.description}"),
@@ -132,33 +145,117 @@ class RuleProcessor:
             ) as progress:
                 task = progress.add_task("Processing files...", total=len(violations_by_file))
                 
-                for file_path, file_violations in violations_by_file.items():
-                    result.files_processed.add(file_path)
+                # Process files in parallel for better performance
+                with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                    # Submit all file processing tasks
+                    future_to_file = {
+                        executor.submit(self._process_file_violations, file_path, file_violations, dry_run): file_path
+                        for file_path, file_violations in violations_by_file.items()
+                    }
                     
-                    # Process violations for this file
-                    fixes = self._process_file_violations(file_path, file_violations, dry_run)
-                    
-                    if fixes:
-                        if not dry_run:
-                            # Backup and apply fixes
-                            self._backup_file(file_path)
-                            applied = self._apply_fixes_to_file(file_path, fixes)
-                            if applied:
-                                result.fixes_applied.extend(applied)
-                                result.files_modified.add(file_path)
-                            else:
-                                result.fixes_skipped.extend(fixes)
-                        else:
-                            # In dry run, all fixes are "skipped"
-                            result.fixes_skipped.extend(fixes)
+                    # Collect results as they complete
+                    for future in as_completed(future_to_file):
+                        file_path = future_to_file[future]
+                        result.files_processed.add(file_path)
+                        
+                        try:
+                            # Check for interruption before processing results
+                            self._check_interrupted()
                             
-                    progress.update(task, advance=1)
+                            fixes = future.result()
+                            
+                            if fixes:
+                                if not dry_run:
+                                    # Backup and apply fixes (thread-safe)
+                                    with self._lock:
+                                        self._check_interrupted()  # Check again inside critical section
+                                        self._backup_file(file_path)
+                                        applied = self._apply_fixes_to_file(file_path, fixes)
+                                        if applied:
+                                            result.fixes_applied.extend(applied)
+                                            result.files_modified.add(file_path)
+                                        else:
+                                            result.fixes_skipped.extend(fixes)
+                                else:
+                                    # In dry run, all fixes are "skipped"
+                                    result.fixes_skipped.extend(fixes)
+                                    
+                        except KeyboardInterrupt:
+                            console.print(f"[yellow]Interrupted while processing {file_path}[/yellow]")
+                            break  # Exit the processing loop
+                        except Exception as e:
+                            result.errors.append(f"Error processing {file_path}: {str(e)}")
+                            
+                        progress.update(task, advance=1)
                     
         except Exception as e:
             result.errors.append(f"Processing error: {str(e)}")
             console.print(f"[red]Error during processing:[/red] {e}")
             
         return result
+    
+    def _setup_signal_handlers(self) -> None:
+        """Set up signal handlers for graceful shutdown."""
+        def signal_handler(signum, frame):
+            console.print(f"\n[yellow]Received interrupt signal ({signum}). Cleaning up...[/yellow]")
+            self._interrupted = True
+            
+            # Run cleanup handlers
+            for handler in self._cleanup_handlers:
+                try:
+                    handler()
+                except Exception as e:
+                    console.print(f"[yellow]Warning: Cleanup handler failed: {e}[/yellow]")
+            
+            console.print("[yellow]Processing interrupted. Partial results may be available.[/yellow]")
+        
+        # Register handlers for common interrupt signals
+        signal.signal(signal.SIGINT, signal_handler)   # Ctrl+C
+        signal.signal(signal.SIGTERM, signal_handler)  # Termination request
+    
+    def _add_cleanup_handler(self, handler: callable) -> None:
+        """Add a cleanup handler to be called on interrupt."""
+        self._cleanup_handlers.append(handler)
+    
+    def _check_interrupted(self) -> None:
+        """Check if processing was interrupted and raise exception if so."""
+        if self._interrupted:
+            raise KeyboardInterrupt("Processing was interrupted by user")
+    
+    def _get_file_content(self, file_path: Path) -> str:
+        """Get file content with caching for performance.
+        
+        Args:
+            file_path: Path to the file
+            
+        Returns:
+            File content as string
+        """
+        # Check cache first
+        if file_path in self._file_cache:
+            return self._file_cache[file_path]
+            
+        # Check file size to avoid loading huge files into memory
+        try:
+            file_size = file_path.stat().st_size
+            if file_size > 10 * 1024 * 1024:  # 10MB limit
+                raise RuntimeError(f"File {file_path} is too large ({file_size / 1024 / 1024:.1f}MB). Maximum size is 10MB.")
+        except OSError as e:
+            raise RuntimeError(f"Cannot access file {file_path}: {e}")
+            
+        # Read and cache the content
+        try:
+            content = file_path.read_text(encoding='utf-8')
+            self._file_cache[file_path] = content
+            return content
+        except UnicodeDecodeError:
+            # Try with fallback encoding
+            try:
+                content = file_path.read_text(encoding='latin-1')
+                self._file_cache[file_path] = content
+                return content
+            except Exception as e:
+                raise RuntimeError(f"Cannot decode file {file_path}: {e}")
         
     def _run_vale_on_files(self, file_paths: List[Path]) -> Optional[str]:
         """Run Vale on the specified files.
@@ -182,9 +279,10 @@ class RuleProcessor:
                     # If file is outside project root, use absolute path
                     path_args.append(str(p))
             
-            # Run Vale with JSON output
-            output = self.vale_container.run_vale(
-                ["--output=JSON"] + path_args
+            # Run Vale with JSON output using optimized method
+            output = self.vale_container.run_vale_raw(
+                ["--output=JSON"] + path_args,
+                project_root
             )
             
             return output
@@ -205,9 +303,9 @@ class RuleProcessor:
         Returns:
             List of fixes to apply
         """
-        # Read file content
+        # Read file content with caching
         try:
-            file_content = file_path.read_text(encoding='utf-8')
+            file_content = self._get_file_content(file_path)
         except Exception as e:
             console.print(f"[red]Error reading {file_path}:[/red] {e}")
             return []
