@@ -67,3 +67,4 @@ exclude:
   - node_modules
   - vendor
   - _posts/post-template.md
+  - drafts/
