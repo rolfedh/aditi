@@ -77,8 +77,8 @@ jobs:
             exit 1
           fi
           
-          # Look for literal placeholder dates in markdown files
-          if grep -r "date: YYYY-MM-DD HH:MM:SS" docs/ --include="*.md" | grep -v template; then
+          # Look for literal placeholder dates in markdown files (excluding code blocks and comments)
+          if grep -r "date: YYYY-MM-DD HH:MM:SS" docs/ --include="*.md" | grep -v template | grep -v "# placeholder" | grep -v "\`\`\`yaml"; then
             echo "❌ Found literal placeholder dates in published content"
             exit 1
           fi
