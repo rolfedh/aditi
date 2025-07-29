@@ -192,8 +192,8 @@ def fix_command(
                 files_modified = 0
                 
                 for file_path in files_to_fix:
-                    # Process just this file
-                    result = processor.process_files([file_path], dry_run=False)
+                    # Process just this file with rule filter
+                    result = processor.process_files([file_path], dry_run=False, rule_filter=rule)
                     
                     if result.fixes_applied:
                         total_fixes_applied += len(result.fixes_applied)

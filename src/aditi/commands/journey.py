@@ -500,8 +500,8 @@ def apply_auto_fixes(rule, violations, processor, files_affected):
         for file_path in files_affected:
             file_violations = [v for v in violations if v.file_path == file_path]
 
-            # Apply fixes to this file
-            result = processor.process_files([file_path], dry_run=False)
+            # Apply fixes to this file for the specific rule only
+            result = processor.process_files([file_path], dry_run=False, rule_filter=rule.name)
             fixes_applied += len(result.fixes_applied)
 
             progress.update(task, advance=1)
@@ -543,8 +543,9 @@ def apply_flags(rule, violations, processor, files_affected):
 
                 for violation in sorted_violations:
                     if 0 < violation.line <= len(lines):
-                        # Insert comment before the line
+                        # Insert comment before the line (not at the line position)
                         comment = f"// ADITI-{rule.name}: {violation.message}\n"
+                        # Insert at the line position, which pushes the original line down
                         lines.insert(violation.line - 1, comment)
                         flags_applied += 1
 

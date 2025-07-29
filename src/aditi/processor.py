@@ -96,12 +96,13 @@ class RuleProcessor:
         # Set up signal handlers for graceful shutdown
         self._setup_signal_handlers()
         
-    def process_files(self, file_paths: List[Path], dry_run: bool = True) -> ProcessingResult:
+    def process_files(self, file_paths: List[Path], dry_run: bool = True, rule_filter: Optional[str] = None) -> ProcessingResult:
         """Process files through the rule pipeline.
         
         Args:
             file_paths: List of files to process
             dry_run: If True, don't apply fixes, just report them
+            rule_filter: Optional rule name to filter processing to only that rule
             
         Returns:
             ProcessingResult with all findings and changes
@@ -154,7 +155,7 @@ class RuleProcessor:
                 with ThreadPoolExecutor(max_workers=max_workers) as executor:
                     # Submit all file processing tasks
                     future_to_file = {
-                        executor.submit(self._process_file_violations, file_path, file_violations, dry_run): file_path
+                        executor.submit(self._process_file_violations, file_path, file_violations, dry_run, rule_filter): file_path
                         for file_path, file_violations in violations_by_file.items()
                     }
                     
@@ -297,13 +298,14 @@ class RuleProcessor:
             return None
             
     def _process_file_violations(self, file_path: Path, violations: List[Violation], 
-                                dry_run: bool) -> List[Fix]:
+                                dry_run: bool, rule_filter: Optional[str] = None) -> List[Fix]:
         """Process violations for a single file.
         
         Args:
             file_path: Path to the file
             violations: List of violations in the file
             dry_run: Whether this is a dry run
+            rule_filter: Optional rule name to filter processing to only that rule
             
         Returns:
             List of fixes to apply
@@ -322,6 +324,10 @@ class RuleProcessor:
         
         # Process violations with each rule
         for rule in rules:
+            # Skip if rule filter is set and this isn't the filtered rule
+            if rule_filter and rule.name != rule_filter:
+                continue
+                
             rule_violations = [v for v in violations if v.rule_name == rule.name]
             
             for violation in rule_violations:
