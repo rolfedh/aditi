@@ -32,7 +32,7 @@ class TestCLIIntegration:
         """Test version output."""
         result = runner.invoke(app, ["--version"])
         assert result.exit_code == 0
-        assert "aditi version 0.1.0" in result.stdout
+        assert "aditi version 0.1.1" in result.stdout
     
     @patch("aditi.cli.init_command")
     def test_init_command(self, mock_init, runner):
