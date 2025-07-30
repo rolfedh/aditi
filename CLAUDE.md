@@ -84,40 +84,9 @@ Use the &#8594; arrow and the &#174; symbol.
 
 ### Usage
 - **Initialize Vale**: `aditi init`
-  ```bash
-  # First-time setup
-  aditi init
-  # Re-download Vale styles
-  aditi init --force
-  ```
-
 - **Check files**: `aditi check`
-  ```bash
-  # Check all .adoc files in current directory
-  aditi check
-  # Check specific directory
-  aditi check docs/
-  # Check with specific rule
-  aditi check --rule ContentType
-  ```
-
 - **Start journey**: `aditi journey`
-  ```bash
-  # Start new journey
-  aditi journey
-  # Resume previous session
-  aditi journey --resume
-  # List active sessions
-  aditi journey --list
-  ```
-
 - **Fix issues**: `aditi fix --rule EntityReference`
-  ```bash
-  # Fix all EntityReference violations
-  aditi fix --rule EntityReference
-  # Preview fixes without applying
-  aditi fix --rule EntityReference --dry-run
-  ```
 <!-- /AUTO-GENERATED:COMMANDS -->
 
 ## Important Rules
@@ -234,11 +203,7 @@ src/aditi/
 │   ├── registry.py       # Rule discovery
 │   └── ...               # Individual rule implementations
 ├── vale_container.py      # Container management
-├── processor.py          # Rule processing engine
-└── session/
-    ├── manager.py        # Session state management
-    ├── models.py         # Session data models
-    └── storage.py        # Session persistence
+└── processor.py          # Rule processing engine
 
 tests/
 ├── unit/                 # Unit tests
@@ -338,7 +303,7 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (July 2025)
 
 ### Statistics
-- Total commits: 130
+- Total commits: 133
 
 ### Latest Achievements
 - ✅ Implement robust claude.md updater with in-place updates.
@@ -348,15 +313,15 @@ A comprehensive test suite prevents Jekyll deployment failures:
 - ✅ Enhance directory path validation and user feedback in configure_repository function.
 
 ### Development Focus
-- **Ci/Cd**: 54 commits
+- **Ci/Cd**: 55 commits
 - **Features**: 18 commits
 - **Bug Fixes**: 14 commits
 - **Documentation**: 14 commits
 - **Testing**: 9 commits
 
 ### Most Active Files
-- `docs/_data/recent_commits.yml`: 54 changes
-- `CLAUDE.md`: 23 changes
+- `docs/_data/recent_commits.yml`: 55 changes
+- `CLAUDE.md`: 25 changes
 - `src/aditi/commands/journey.py`: 13 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
