@@ -68,6 +68,17 @@ class Rule(ABC):
         """
         pass
     
+    def create_comment_flag(self, violation: Violation) -> str:
+        """Create a standardized comment flag for violations.
+        
+        Args:
+            violation: The violation to flag
+            
+        Returns:
+            Formatted comment string with Check, Severity, Message
+        """
+        return f"// {violation.check}, {violation.severity.value}, {violation.message}"
+    
     @abstractmethod
     def generate_fix(self, violation: Violation, file_content: str) -> Optional[Fix]:
         """Generate a fix for the violation.

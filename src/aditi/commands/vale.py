@@ -6,6 +6,7 @@ from typing import List, Optional
 
 import typer
 from rich.console import Console
+from rich.progress import Progress, SpinnerColumn, TextColumn
 from rich.syntax import Syntax
 from rich.table import Table
 
@@ -97,8 +98,6 @@ def vale_command(
         # Ensure Vale image exists
         vale_container.ensure_image_exists()
             
-        console.print(f"🔍 Running Vale on {len(adoc_files)} files with output format: {output_format}")
-        
         # Convert paths to relative paths for container
         project_root = Path.cwd()
         path_args = []
@@ -111,27 +110,38 @@ def vale_command(
                 path_args.append(str(p))
         
         # Run Vale with specified output format
-        if output_format.upper() == "JSON":
-            # Use JSON output and pretty print if requested
-            output = vale_container.run_vale_raw(["--output=JSON"] + path_args)
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True
+        ) as progress:
+            task = progress.add_task(
+                f"Running Vale on {len(adoc_files)} files with output format: {output_format}",
+                total=None
+            )
             
-            if pretty:
-                try:
-                    # Parse and pretty print JSON
-                    data = json.loads(output)
-                    formatted = json.dumps(data, indent=2, sort_keys=True)
-                    syntax = Syntax(formatted, "json", theme="monokai", line_numbers=True)
-                    console.print(syntax)
-                except json.JSONDecodeError:
-                    # Fallback to raw output if JSON parsing fails
+            if output_format.upper() == "JSON":
+                # Use JSON output and pretty print if requested
+                output = vale_container.run_vale_raw(["--output=JSON"] + path_args)
+                
+                if pretty:
+                    try:
+                        # Parse and pretty print JSON
+                        data = json.loads(output)
+                        formatted = json.dumps(data, indent=2, sort_keys=True)
+                        syntax = Syntax(formatted, "json", theme="monokai", line_numbers=True)
+                        console.print(syntax)
+                    except json.JSONDecodeError:
+                        # Fallback to raw output if JSON parsing fails
+                        console.print(output)
+                else:
                     console.print(output)
             else:
-                console.print(output)
-        else:
-            # Use specified format directly
-            output = vale_container.run_vale_raw([f"--output={output_format}"] + path_args)
-            # For non-JSON output, print raw text without Rich formatting
-            print(output, end='')
+                # Use specified format directly
+                output = vale_container.run_vale_raw([f"--output={output_format}"] + path_args)
+                # For non-JSON output, print raw text without Rich formatting
+                print(output, end='')
             
     except Exception as e:
         console.print(f"[red]Error running Vale:[/red] {e}")

@@ -53,9 +53,9 @@ app = typer.Typer(
     name="aditi",
     help="""AsciiDoc DITA Integration - Prepare AsciiDoc files for migration to DITA
 
-IMPORTANT:
-- cd to the root directory of your repository before running aditi commands.
-- Create a working branch with the latest changes in it.""",
+[bold yellow]⚠️  IMPORTANT:[/bold yellow]
+[bold]- cd to the root directory of your repository before running aditi commands.
+- Create a working branch with the latest changes in it.[/bold]""",
     no_args_is_help=True,
     rich_markup_mode="rich",
     add_completion=False,

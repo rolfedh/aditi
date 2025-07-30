@@ -123,8 +123,17 @@ class RuleProcessor:
         try:
             # Step 1: Run Vale on all files
             est_time = len(file_paths) * 0.3  # Rough estimate: 0.3s per file for Vale
-            console.print(f"\n🔍 Running Vale analysis on {len(file_paths)} files (~{est_time:.0f}s estimated)...")
-            vale_output = self._run_vale_on_files(file_paths)
+            with Progress(
+                SpinnerColumn(),
+                TextColumn("[progress.description]{task.description}"),
+                console=console,
+                transient=True
+            ) as progress:
+                task = progress.add_task(
+                    f"🔍 Running Vale analysis on {len(file_paths)} files (~{est_time:.0f}s estimated)...",
+                    total=None
+                )
+                vale_output = self._run_vale_on_files(file_paths)
             
             if not vale_output:
                 result.errors.append("Failed to run Vale analysis")

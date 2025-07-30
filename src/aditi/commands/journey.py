@@ -470,12 +470,12 @@ def process_single_rule(rule, violations, description, processor, config_manager
 
     action = questionary.text(prompt_text).ask()
     
-    # Use default if user just pressed Enter
-    if not action or action.strip() == "":
-        action = default_letter
-
-    if not action:  # User cancelled
+    if action is None:  # User cancelled (Ctrl+C)
         return False
+    
+    # Use default if user just pressed Enter
+    if action.strip() == "":
+        action = default_letter
 
     action_char = action.strip().lower()
 
