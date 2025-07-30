@@ -1,7 +1,7 @@
 """Journey command implementation for guided DITA preparation workflow."""
 
 import sys
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 
@@ -19,6 +19,130 @@ from ..processor import RuleProcessor
 from ..rules import FixType
 
 console = Console()
+
+
+def get_session_age(session_started: Optional[str]) -> Optional[str]:
+    """Get human-readable age of session.
+    
+    Args:
+        session_started: ISO timestamp of session start
+        
+    Returns:
+        Human-readable age string or None if no session
+    """
+    if not session_started:
+        return None
+        
+    try:
+        start_time = datetime.fromisoformat(session_started)
+        age = datetime.now() - start_time
+        
+        if age.days > 0:
+            return f"{age.days} day{'s' if age.days > 1 else ''}"
+        elif age.seconds >= 3600:
+            hours = age.seconds // 3600
+            return f"{hours} hour{'s' if hours > 1 else ''}"
+        elif age.seconds >= 60:
+            minutes = age.seconds // 60
+            return f"{minutes} minute{'s' if minutes > 1 else ''}"
+        else:
+            return "less than a minute"
+    except Exception:
+        return "unknown time"
+
+
+def display_session_info(session) -> None:
+    """Display current session information."""
+    if not session.session_started:
+        return
+        
+    age = get_session_age(session.session_started)
+    console.print(f"\n📋 [bold]Found existing journey session[/bold] ({age} old)")
+    
+    if session.journey_progress:
+        repo = session.journey_progress.get("repository_root", "Unknown")
+        console.print(f"   Repository: [cyan]{repo}[/cyan]")
+    
+    if session.total_rules and session.applied_rules:
+        progress = len(session.applied_rules)
+        console.print(f"   Progress: {progress} of {session.total_rules} rules completed")
+        
+        if session.current_rule:
+            console.print(f"   Last rule: {session.current_rule}")
+    
+    # TODO: Add file count when we implement file tracking
+    console.print()
+
+
+def backup_session(config_manager: ConfigManager) -> None:
+    """Backup current session to session-backups directory."""
+    import json
+    import shutil
+    
+    session_file = config_manager.session_file
+    if not session_file.exists():
+        return
+        
+    # Create backup directory
+    backup_dir = config_manager.config_dir / "session-backups"
+    backup_dir.mkdir(exist_ok=True)
+    
+    # Generate backup filename with timestamp
+    timestamp = datetime.now().strftime("%Y-%m-%d-%H%M%S")
+    backup_file = backup_dir / f"session-{timestamp}.json"
+    
+    # Copy session file
+    shutil.copy2(session_file, backup_file)
+    
+    # Keep only last 5 backups
+    backups = sorted(backup_dir.glob("session-*.json"))
+    if len(backups) > 5:
+        for old_backup in backups[:-5]:
+            old_backup.unlink()
+    
+    console.print(f"[dim]Session backed up to {backup_file.name}[/dim]")
+
+
+def validate_session(session) -> List[str]:
+    """Validate session data and return list of validation errors.
+    
+    Args:
+        session: SessionState to validate
+        
+    Returns:
+        List of validation error messages
+    """
+    errors = []
+    
+    # Check if repository path exists
+    if session.journey_progress:
+        repo_path = session.journey_progress.get("repository_root")
+        if repo_path:
+            repo_path = Path(repo_path)
+            if not repo_path.exists():
+                errors.append(f"Repository path no longer exists: {repo_path}")
+            elif not repo_path.is_dir():
+                errors.append(f"Repository path is not a directory: {repo_path}")
+            elif not (repo_path / ".git").exists():
+                errors.append(f"Repository path is no longer a git repository: {repo_path}")
+                
+            # Check if we're in the same directory
+            if repo_path.exists() and repo_path != Path.cwd():
+                errors.append(f"Current directory differs from session repository: {Path.cwd()}")
+    
+    # Check if selected directories still exist
+    if session.journey_progress:
+        dirs = session.journey_progress.get("selected_directories", [])
+        missing_dirs = []
+        for dir_path in dirs:
+            if not Path(dir_path).exists():
+                missing_dirs.append(dir_path)
+        if missing_dirs:
+            errors.append(f"Some selected directories no longer exist: {', '.join(missing_dirs[:3])}")
+    
+    # TODO: Add git branch validation when git integration is added
+    
+    return errors
 
 
 # Rule processing order as defined in the mockup
@@ -60,8 +184,80 @@ RULE_PROCESSING_ORDER = [
 ]
 
 
-def journey_command(dry_run: bool = False) -> None:
+def journey_command(dry_run: bool = False, clear: bool = False, status: bool = False) -> None:
     """Start an interactive journey to prepare AsciiDoc files for DITA migration."""
+    config_manager = ConfigManager()
+    
+    # Handle --clear flag
+    if clear:
+        session = config_manager.load_session()
+        if session.session_started:
+            console.print("\n🗑️  [bold]Clearing journey session[/bold]")
+            display_session_info(session)
+            
+            confirm = questionary.confirm(
+                "Are you sure you want to clear this session?",
+                default=False
+            ).ask()
+            
+            if confirm:
+                backup_session(config_manager)
+                config_manager.clear_session()
+                console.print("[green]✓ Session cleared and backed up.[/green]")
+            else:
+                console.print("[yellow]Cancelled.[/yellow]")
+        else:
+            console.print("[yellow]No active journey session to clear.[/yellow]")
+        return
+    
+    # Handle --status flag
+    if status:
+        session = config_manager.load_session()
+        if session.session_started:
+            display_session_info(session)
+            
+            # Show more detailed status
+            if session.journey_state == "configured":
+                console.print("\n[bold]Session Details:[/bold]")
+                
+                # Show repository info
+                if session.journey_progress:
+                    dirs = session.journey_progress.get("selected_directories", [])
+                    if dirs:
+                        console.print(f"   Selected directories: {len(dirs)}")
+                        for dir_path in dirs[:3]:  # Show first 3
+                            console.print(f"     • {dir_path}")
+                        if len(dirs) > 3:
+                            console.print(f"     ... and {len(dirs) - 3} more")
+                
+                # Show rules progress
+                if session.applied_rules:
+                    console.print(f"\n   [bold]Completed rules:[/bold]")
+                    for rule in session.applied_rules[-5:]:  # Show last 5
+                        console.print(f"     ✓ {rule}")
+                    if len(session.applied_rules) > 5:
+                        console.print(f"     ... and {len(session.applied_rules) - 5} more")
+                
+                # Show next rule
+                if session.current_rule:
+                    console.print(f"\n   [bold]Next rule:[/bold] {session.current_rule}")
+                elif session.total_rules and len(session.applied_rules) < session.total_rules:
+                    # Find next rule
+                    applied_set = set(session.applied_rules)
+                    for rule_name, _, _ in RULE_PROCESSING_ORDER:
+                        if rule_name not in applied_set:
+                            console.print(f"\n   [bold]Next rule:[/bold] {rule_name}")
+                            break
+                
+                console.print(f"\n[dim]Run 'aditi journey' to resume[/dim]")
+            else:
+                console.print("\n[yellow]Session exists but configuration not complete.[/yellow]")
+                console.print("[dim]Run 'aditi journey' to continue setup[/dim]")
+        else:
+            console.print("[yellow]No active journey session.[/yellow]")
+            console.print("[dim]Run 'aditi journey' to start[/dim]")
+        return
+    
     if dry_run:
         console.print(Panel.fit(
             "🔍 [bold]Aditi Journey - Dry Run Mode[/bold]\n\n"
@@ -114,15 +310,54 @@ def journey_command(dry_run: bool = False) -> None:
         return
     
     # Normal interactive mode
+    config_manager = ConfigManager()
+    session = config_manager.load_session()
+    
+    # Check if we have an existing session
+    if session.session_started and session.journey_state:
+        # Validate session before showing it
+        validation_errors = validate_session(session)
+        
+        display_session_info(session)
+        
+        # Show validation warnings if any
+        if validation_errors:
+            console.print("\n⚠️  [yellow]Session validation warnings:[/yellow]")
+            for error in validation_errors:
+                console.print(f"   • {error}")
+            console.print()
+        
+        # Add age warning for old sessions
+        age = get_session_age(session.session_started)
+        if age and ("day" in age and int(age.split()[0]) >= 7):
+            console.print("⚠️  [yellow]Session is more than 7 days old. Repository may have changed significantly.[/yellow]\n")
+        
+        # Ask if they want to resume
+        resume = questionary.confirm(
+            "Resume from where you left off?",
+            default=True if not validation_errors else False
+        ).ask()
+        
+        if not resume:
+            # Back up existing session before starting fresh
+            backup_session(config_manager)
+            config_manager.clear_session()
+            session = config_manager.load_session()  # Get fresh session
+            console.print("[yellow]Starting fresh journey. Previous session backed up.[/yellow]\n")
+            
     # Phase 1: Repository Configuration  
-    if not configure_repository():
-        return
+    if not session.journey_state or session.journey_state != "configured":
+        if not configure_repository():
+            return
 
     # Phase 2: Rule Application Workflow
-    apply_rules_workflow()
+    completed = apply_rules_workflow()
 
     # Phase 3: Completion
-    complete_journey()
+    if completed:
+        complete_journey()
+    else:
+        console.print("\n[yellow]Journey paused. Run 'aditi journey' again to resume.[/yellow]")
 
 
 def configure_repository() -> bool:
@@ -406,11 +641,19 @@ def save_configuration(root_path: Path, selected_dirs: Optional[List[Path]]) -> 
         "selected_directories": [str(d) for d in (selected_dirs or [])],
         "timestamp": datetime.now().isoformat()
     }
+    # Set session timing if this is a new session
+    if not session.session_started:
+        session.session_started = datetime.now().isoformat()
+    session.last_updated = datetime.now().isoformat()
     config_manager.save_session(session)
 
 
-def apply_rules_workflow() -> None:
-    """Apply rules in the correct order with user interaction."""
+def apply_rules_workflow() -> bool:
+    """Apply rules in the correct order with user interaction.
+    
+    Returns:
+        True if workflow completed, False if cancelled by user
+    """
     config_manager = ConfigManager()
     config = config_manager.load_config()
     session = config_manager.load_session()
@@ -427,21 +670,48 @@ def apply_rules_workflow() -> None:
     adoc_files = collect_adoc_files(config)
     if not adoc_files:
         console.print("[yellow]No .adoc files found to process.[/yellow]")
-        return
+        return True  # Consider this as completed since there's nothing to do
 
     # Initialize processor
     processor = RuleProcessor(vale_container, config)
+    
+    # Track total rules to process
+    session.total_rules = len(RULE_PROCESSING_ORDER)
+    config_manager.save_session(session)
+
+    # Determine starting point for rule processing
+    start_index = 0
+    if session.applied_rules:
+        # Find where we left off
+        applied_set = set(session.applied_rules)
+        for i, (rule_name, _, _) in enumerate(RULE_PROCESSING_ORDER):
+            if rule_name not in applied_set:
+                start_index = i
+                break
+        else:
+            # All rules have been applied
+            console.print("[green]All rules have already been applied![/green]")
+            return True
+            
+        if start_index > 0:
+            console.print(f"\n[yellow]Resuming from rule {start_index + 1}/{len(RULE_PROCESSING_ORDER)}[/yellow]")
+            console.print(f"[dim]Already completed: {', '.join(session.applied_rules)}[/dim]\n")
 
     # Process each rule in order with fresh Vale runs
-    for rule_name, severity, description in RULE_PROCESSING_ORDER:
+    for rule_index, (rule_name, severity, description) in enumerate(RULE_PROCESSING_ORDER[start_index:], start=start_index):
         # Get the rule instance first to check if it's implemented
         rule = processor.rule_registry.get_rule(rule_name)
         if not rule:
             console.print(f"[yellow]Warning: Rule {rule_name} not implemented yet.[/yellow]")
             continue
+        
+        # Update session with current rule
+        session.current_rule = rule_name
+        session.last_updated = datetime.now().isoformat()
+        config_manager.save_session(session)
 
         # Run Vale for just this specific rule
-        console.print(f"\n🔍 Checking for {rule_name} issues...\n")
+        console.print(f"\n🔍 Checking for {rule_name} issues... (Rule {rule_index + 1}/{session.total_rules})\n")
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -478,8 +748,7 @@ def apply_rules_workflow() -> None:
         # Process this rule
         if not process_single_rule(rule, rule_violations, description, processor, config_manager):
             # User chose to stop
-            console.print("\n[yellow]Journey paused. You can resume later.[/yellow]")
-            return
+            return False
 
         # Update session
         session.applied_rules.append(rule_name)
@@ -487,6 +756,14 @@ def apply_rules_workflow() -> None:
 
     # Cleanup
     vale_container.cleanup()
+    
+    # Clear current rule since we're done
+    session.current_rule = None
+    session.last_updated = datetime.now().isoformat()
+    config_manager.save_session(session)
+    
+    # All rules processed successfully
+    return True
 
 
 def process_single_rule(rule, issues, description, processor, config_manager) -> bool:

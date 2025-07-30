@@ -214,6 +214,16 @@ def journey(
         "-d", 
         help="Show what would be configured and fixed without making changes",
     ),
+    clear: bool = typer.Option(
+        False,
+        "--clear",
+        help="Clear the current journey session and start fresh",
+    ),
+    status: bool = typer.Option(
+        False,
+        "--status",
+        help="Show current journey session status without starting",
+    ),
     verbose: bool = verbose_option,
 ) -> None:
     """Start an interactive journey to prepare AsciiDoc files for DITA migration.
@@ -225,9 +235,11 @@ def journey(
     - Prompt you to fix flagged issues
     
     Use --dry-run to preview actions without making changes.
+    Use --clear to clear the current session and start fresh.
+    Use --status to view current session progress.
     """
     setup_logging(verbose)
-    journey_command(dry_run=dry_run)
+    journey_command(dry_run=dry_run, clear=clear, status=status)
 
 
 @app.command()

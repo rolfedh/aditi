@@ -146,6 +146,27 @@ class SessionState(BaseModel):
         default_factory=list,
         description="Rules that have been applied in current journey"
     )
+    # Enhanced tracking fields
+    current_rule: Optional[str] = Field(
+        None,
+        description="Rule currently being processed"
+    )
+    total_rules: Optional[int] = Field(
+        None,
+        description="Total number of rules to process"
+    )
+    files_fixed_by_rule: Dict[str, int] = Field(
+        default_factory=dict,
+        description="Number of files fixed per rule"
+    )
+    session_started: Optional[str] = Field(
+        None,
+        description="ISO timestamp when session started"
+    )
+    last_updated: Optional[str] = Field(
+        None,
+        description="ISO timestamp of last update"
+    )
 
     class Config:
         """Pydantic configuration."""
