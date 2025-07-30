@@ -192,6 +192,7 @@ def configure_repository() -> bool:
         # Enter custom paths
         custom_paths = []
         console.print("\nEnter directory paths (relative to repository root).")
+        console.print(f"[dim]Repository root: {current_dir}[/dim]")
         console.print("Press Enter with empty input when done.\n")
         
         while True:
@@ -199,12 +200,37 @@ def configure_repository() -> bool:
             if not path_str:
                 break
                 
+            # Clean up the path - remove leading slash if present
+            path_str = path_str.strip()
+            if path_str.startswith('/'):
+                path_str = path_str[1:]
+            
             path = Path(path_str)
-            if (current_dir / path).exists() and (current_dir / path).is_dir():
+            full_path = current_dir / path
+            
+            if full_path.exists() and full_path.is_dir():
                 custom_paths.append(path)
                 console.print(f"  ✓ Added: {path}")
             else:
                 console.print(f"  [red]✗ Invalid path: {path}[/red]")
+                console.print(f"    [dim]Looking for: {full_path}[/dim]")
+                if not full_path.exists():
+                    console.print(f"    [dim]Path does not exist[/dim]")
+                    # Check what directories DO exist to help the user
+                    parent = full_path.parent
+                    while parent != current_dir and not parent.exists():
+                        parent = parent.parent
+                    if parent.exists() and parent != current_dir:
+                        console.print(f"    [dim]Last existing directory: {parent}[/dim]")
+                        # List subdirectories to help
+                        try:
+                            subdirs = [d.name for d in parent.iterdir() if d.is_dir()][:5]
+                            if subdirs:
+                                console.print(f"    [dim]Available subdirectories: {', '.join(subdirs)}[/dim]")
+                        except:
+                            pass
+                elif not full_path.is_dir():
+                    console.print(f"    [dim]Path exists but is not a directory[/dim]")
         
         if not custom_paths:
             console.print("[red]No valid paths entered. Exiting.[/red]")
