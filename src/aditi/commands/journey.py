@@ -638,24 +638,35 @@ def select_directories(root_path: Path) -> Optional[List[Path]]:
 
     console.print(f"\n🎯 Found documentation to process: {total_files:,} total files\n")
 
-    # Multi-select prompt with custom checkbox symbols
-    selected = questionary.checkbox(
-        "Select directories (Space to toggle, Enter to continue):",
-        choices=choices,
-        checked_symbol="✓",   # Green checkmark for selected
-        unchecked_symbol="○", # Empty circle for unselected
-        selected_symbol="❯",  # Arrow for currently highlighted item
-        style=Style([
-            ('checkbox-checked', 'fg:#00ff00 bold'),    # Green checkmarks
-            ('checkbox-unchecked', 'fg:#666666'),       # Gray circles
-            ('checkbox-selected', 'fg:#ffffff bold'),   # White text for selection
-            ('instruction', 'fg:#888888 italic'),       # Gray instructions
-            ('question', 'fg:#ffffff bold'),            # White question
-        ])
-    ).ask()
-
-    if selected is None:  # User cancelled
-        return None
+    # Simple numbered selection
+    console.print("\n[bold]Available directories:[/bold]")
+    for i, (path, count) in enumerate(sorted_dirs, 1):
+        console.print(f"  {i}. {path} ({count:,} files)")
+    
+    console.print(f"\n[dim]Enter numbers separated by spaces (e.g., '1 3 4'), or 'all' for all directories:[/dim]")
+    
+    while True:
+        choice = questionary.text("Your selection").ask()
+        if choice is None:  # User cancelled
+            return None
+            
+        choice = choice.strip().lower()
+        if choice == 'all':
+            selected = [str(path) for path, _ in sorted_dirs]
+            break
+        elif choice == '':
+            console.print("[red]Please enter your selection[/red]")
+            continue
+        else:
+            try:
+                numbers = [int(x.strip()) for x in choice.split()]
+                if all(1 <= num <= len(sorted_dirs) for num in numbers):
+                    selected = [str(sorted_dirs[num-1][0]) for num in numbers]
+                    break
+                else:
+                    console.print(f"[red]Please enter numbers between 1 and {len(sorted_dirs)}[/red]")
+            except ValueError:
+                console.print("[red]Please enter valid numbers separated by spaces[/red]")
 
     # Convert back to Path objects
     selected_paths = [Path(p) for p in selected]
