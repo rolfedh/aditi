@@ -414,6 +414,9 @@ class ClaudeMdUpdater:
             if not commits or commits == ['']:
                 return {'achievements': [], 'focus_areas': [], 'lessons': []}
             
+            # Filter out empty commits
+            commits = [c for c in commits if c.strip()]
+            
             # Analyze commit themes
             themes = self._extract_commit_themes(commits)
             achievements = self._extract_achievements(commits)
@@ -427,6 +430,8 @@ class ClaudeMdUpdater:
             
         except Exception as e:
             print(f"⚠️  Error analyzing recent development: {e}")
+            import traceback
+            traceback.print_exc()
             return {'achievements': [], 'focus_areas': [], 'lessons': []}
     
     def _extract_commit_themes(self, commits: List[str]) -> List[str]:
@@ -466,13 +471,23 @@ class ClaudeMdUpdater:
             
             # Look for achievement indicators
             if 'feat:' in message.lower():
-                feature = message.split('feat:', 1)[1].strip()
-                achievements.append(f"✅ {feature.split('.')[0].capitalize()}")
+                feat_split = message.split('feat:', 1)
+                if len(feat_split) > 1:
+                    feature = feat_split[1].strip()
+                    feature_parts = feature.split('.')
+                    achievements.append(f"✅ {feature_parts[0].capitalize() if feature_parts else feature.capitalize()}")
             elif 'implement' in message.lower():
-                impl = message.lower().split('implement', 1)[1].strip()
-                achievements.append(f"✅ Implemented {impl.split('.')[0]}")
+                impl_split = message.lower().split('implement', 1)
+                if len(impl_split) > 1:
+                    impl = impl_split[1].strip()
+                    impl_parts = impl.split('.')
+                    achievements.append(f"✅ Implemented {impl_parts[0] if impl_parts else impl}")
             elif 'add' in message.lower() and any(word in message.lower() for word in ['test', 'validation', 'workflow']):
-                achievements.append(f"✅ {message.split('add', 1)[1].strip().split('.')[0].capitalize()}")
+                add_split = message.split('add', 1)
+                if len(add_split) > 1:
+                    add_msg = add_split[1].strip()
+                    add_parts = add_msg.split('.')
+                    achievements.append(f"✅ {(add_parts[0] if add_parts else add_msg).capitalize()}")
         
         return list(set(achievements))  # Remove duplicates
     
