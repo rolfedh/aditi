@@ -189,7 +189,7 @@ Aditi maintains session state to provide continuity across command invocations, 
 
 ### Next Phases
 - **Phase 4**: Reporting and Distribution
-- **Phase 5**: Advanced Features (git integration, rule customization)
+- **Phase 5**: Advanced Features (rule customization)
 
 <!-- AUTO-GENERATED:ARCHITECTURE -->
 ### Current Architecture
