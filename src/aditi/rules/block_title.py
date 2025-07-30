@@ -46,7 +46,7 @@ class BlockTitleRule(Rule):
         # For non-deterministic rules, we just flag the issue
         fix = Fix(
             violation=violation,
-            replacement_text=f"// AsciiDocDITA {violation.message}",
+            replacement_text=self.create_comment_flag(violation),
             confidence=1.0,
             requires_review=True,
             description="Flag for manual review"

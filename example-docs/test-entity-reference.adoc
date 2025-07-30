@@ -17,9 +17,11 @@ Here's some code:
 
 ----
 // This &nbsp; should not be replaced
+// ADITI-EntityReference: HTML character entity references are not supported in DITA.
 String text = "Hello&nbsp;World";
 ----
 
+// ADITI-EntityReference: HTML character entity references are not supported in DITA.
 And inline code: `&nbsp;` should also not be replaced.
 
 == More Examples

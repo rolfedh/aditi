@@ -25,7 +25,9 @@ This document covers the installation process.
 Before starting, you need:
 
 * Administrative access to the system  
+// ADITI-EntityReference: HTML character entity references are not supported in DITA.
 * At least 2GB free space&nbsp;available  
+// ADITI-EntityReference: HTML character entity references are not supported in DITA.
 * Network connectivity for downloads&copy;
 // EntityReference rule: &nbsp; and &copy; entities
 

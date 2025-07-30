@@ -632,7 +632,7 @@ def apply_flags(rule, issues, processor, files_affected):
                 for issue in sorted_issues:
                     if 0 < issue.line <= len(lines):
                         # Insert comment before the line (not at the line position)
-                        comment = f"// ADITI-{rule.name}: {issue.message}\n"
+                        comment = rule.create_comment_flag(issue) + "\n"
                         # Insert at the line position, which pushes the original line down
                         lines.insert(issue.line - 1, comment)
                         flags_applied += 1
