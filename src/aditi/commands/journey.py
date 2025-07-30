@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import List, Optional, Dict, Any
 
 import questionary
+from questionary import Style
 import typer
 from rich.console import Console
 from rich.panel import Panel
@@ -637,10 +638,20 @@ def select_directories(root_path: Path) -> Optional[List[Path]]:
 
     console.print(f"\n🎯 Found documentation to process: {total_files:,} total files\n")
 
-    # Multi-select prompt
+    # Multi-select prompt with custom checkbox symbols
     selected = questionary.checkbox(
         "Select directories (Space to toggle, Enter to continue):",
-        choices=choices
+        choices=choices,
+        checked_symbol="✓",   # Green checkmark for selected
+        unchecked_symbol="○", # Empty circle for unselected
+        selected_symbol="❯",  # Arrow for currently highlighted item
+        style=Style([
+            ('checkbox-checked', 'fg:#00ff00 bold'),    # Green checkmarks
+            ('checkbox-unchecked', 'fg:#666666'),       # Gray circles
+            ('checkbox-selected', 'fg:#ffffff bold'),   # White text for selection
+            ('instruction', 'fg:#888888 italic'),       # Gray instructions
+            ('question', 'fg:#ffffff bold'),            # White question
+        ])
     ).ask()
 
     if selected is None:  # User cancelled
