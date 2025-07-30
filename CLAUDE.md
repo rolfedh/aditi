@@ -46,6 +46,34 @@ Aditi is designed as an MVP focused on helping technical writers prepare AsciiDo
 ### Rule Processing Stages
 Rules are grouped by dependencies - ContentType must run before rules that depend on content type identification (TaskSection, TaskExample, etc.).
 
+### Examples of Violation Fix Types
+
+#### Fully Deterministic Example (EntityReference)
+```asciidoc
+// Before
+Use the -> arrow and the (R) symbol.
+
+// After (automatically fixed)
+Use the &#8594; arrow and the &#174; symbol.
+```
+
+#### Partially Deterministic Example (ContentType)
+```asciidoc
+// Before (missing content type)
+= My Document Title
+
+// After (with placeholder)
+= My Document Title
+:_mod-docs-content-type: <PLACEHOLDER: Choose from ASSEMBLY, CONCEPT, PROCEDURE, REFERENCE, or SNIPPET>
+```
+
+#### Non-Deterministic Example (TaskSection)
+```asciidoc
+// Flagged with comment
+// ADITI-ERROR: TaskSection - Task sections must use specific heading syntax
+== Installing the Software
+```
+
 <!-- AUTO-GENERATED:COMMANDS -->
 ### Development
 - **Install dependencies**: `pip install -e ".[dev]"`
@@ -56,9 +84,40 @@ Rules are grouped by dependencies - ContentType must run before rules that depen
 
 ### Usage
 - **Initialize Vale**: `aditi init`
+  ```bash
+  # First-time setup
+  aditi init
+  # Re-download Vale styles
+  aditi init --force
+  ```
+
 - **Check files**: `aditi check`
+  ```bash
+  # Check all .adoc files in current directory
+  aditi check
+  # Check specific directory
+  aditi check docs/
+  # Check with specific rule
+  aditi check --rule ContentType
+  ```
+
 - **Start journey**: `aditi journey`
+  ```bash
+  # Start new journey
+  aditi journey
+  # Resume previous session
+  aditi journey --resume
+  # List active sessions
+  aditi journey --list
+  ```
+
 - **Fix issues**: `aditi fix --rule EntityReference`
+  ```bash
+  # Fix all EntityReference violations
+  aditi fix --rule EntityReference
+  # Preview fixes without applying
+  aditi fix --rule EntityReference --dry-run
+  ```
 <!-- /AUTO-GENERATED:COMMANDS -->
 
 ## Important Rules
@@ -100,6 +159,24 @@ User configuration stored in `~/aditi-data/config.json`:
 - Feature branch naming conventions
 - Session state management for current operations
 
+## Session Management
+
+### Overview
+Aditi maintains session state to provide continuity across command invocations, allowing users to resume interrupted workflows.
+
+### Session Features
+- **Automatic state persistence**: Sessions are saved to `~/aditi-data/sessions/`
+- **Graceful recovery**: Resume from where you left off after interruptions
+- **Progress tracking**: Visual indicators show completion status
+- **Branch management**: Tracks current working branch and changes
+
+### Session Workflow
+1. Start a journey: `aditi journey`
+2. Session ID is generated and displayed
+3. Progress is saved after each step
+4. If interrupted, run `aditi journey --resume` to continue
+5. Sessions expire after 7 days of inactivity
+
 ## Implementation Status
 
 <!-- AUTO-GENERATED:COMPLETED -->
@@ -127,6 +204,13 @@ User configuration stored in `~/aditi-data/config.json`:
 ✅ Blog post validation test suite with regression prevention
 ✅ Jekyll front matter standardization across all blog posts
 ✅ GitHub Actions workflow for automated blog post validation
+
+### Completed (Phase 3 - Journey Session Management)
+✅ Session state persistence and recovery
+✅ Interactive journey workflow with user guidance
+✅ Git workflow integration for branch management
+✅ Rule execution with progress tracking
+✅ Session continuity across command invocations
 <!-- /AUTO-GENERATED:COMPLETED -->
 
 ### Next Phases
@@ -150,7 +234,11 @@ src/aditi/
 │   ├── registry.py       # Rule discovery
 │   └── ...               # Individual rule implementations
 ├── vale_container.py      # Container management
-└── processor.py          # Rule processing engine
+├── processor.py          # Rule processing engine
+└── session/
+    ├── manager.py        # Session state management
+    ├── models.py         # Session data models
+    └── storage.py        # Session persistence
 
 tests/
 ├── unit/                 # Unit tests
@@ -272,8 +360,111 @@ A comprehensive test suite prevents Jekyll deployment failures:
 - `src/aditi/commands/journey.py`: 13 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
+## Testing Guidelines
+
+### Running Tests
+```bash
+# Run all tests
+pytest
+
+# Run with coverage
+pytest --cov=src/aditi --cov-report=term-missing
+
+# Run specific test file
+pytest tests/unit/test_rules.py
+
+# Run tests matching pattern
+pytest -k "test_content_type"
+
+# Run with verbose output
+pytest -v
+```
+
+### Testing Vale Container
+```bash
+# Test container availability
+pytest tests/integration/test_vale_container.py
+
+# Test with specific container runtime
+ADITI_CONTAINER_RUNTIME=docker pytest tests/integration/
+
+# Test container timeout handling
+pytest tests/integration/test_vale_container.py::test_timeout
+```
+
+### Testing Rules
+Each rule should have:
+1. Unit tests for rule logic
+2. Integration tests with sample .adoc files
+3. Edge case handling tests
+4. Performance tests for large files
+
+Example test structure:
+```python
+def test_entity_reference_rule():
+    # Test basic replacement
+    assert rule.fix("Use ->") == "Use &#8594;"
+    
+    # Test multiple entities
+    assert rule.fix("(R) and (TM)") == "&#174; and &#8482;"
+    
+    # Test edge cases
+    assert rule.fix("") == ""
+```
+
+## Performance Considerations
+
+### Processing Large Repositories
+- **Batch processing**: Files are processed in batches of 100
+- **Memory usage**: ~50MB base + 2MB per 1000 files
+- **Container overhead**: ~200MB for Vale container
+- **Typical processing times**:
+  - Small repo (< 100 files): 1-2 minutes
+  - Medium repo (100-1000 files): 5-10 minutes
+  - Large repo (> 1000 files): 15-30 minutes
+
+### Optimization Tips
+1. Use `.vale.ini` BlockIgnore patterns to skip generated files
+2. Process specific directories instead of entire repository
+3. Run deterministic rules first for quick wins
+4. Use `--parallel` flag for multi-core processing (future feature)
+
+## Error Handling Guidelines
+
+### Common Error Scenarios
+
+#### Container Errors
+```
+Error: Vale container not found
+Solution: Run 'aditi init' to set up Vale
+```
+
+#### Permission Errors
+```
+Error: Permission denied accessing file
+Solution: Check file permissions or run with appropriate access
+```
+
+#### Configuration Errors
+```
+Error: Invalid configuration in ~/aditi-data/config.json
+Solution: Delete config file and re-run 'aditi journey'
+```
+
+### Error Reporting
+- Errors are displayed with Rich formatting
+- Stack traces shown only with `--verbose` flag
+- Errors logged to `~/aditi-data/logs/aditi.log`
+- Non-fatal errors allow processing to continue
+
+### Recovery Procedures
+1. **Session recovery**: Use `aditi journey --resume`
+2. **Config reset**: Delete `~/aditi-data/config.json`
+3. **Vale reset**: Run `aditi init --force`
+4. **Clean state**: Remove `~/aditi-data/` directory
+
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.
 NEVER create files unless they're absolutely necessary for achieving your goal.
 ALWAYS prefer editing an existing file to creating a new one.
-NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.# Test comment
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
