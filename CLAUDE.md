@@ -308,26 +308,26 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (July 2025)
 
 ### Statistics
-- Total commits: 179
+- Total commits: 182
 
 ### Latest Achievements
+- ✅ Improve directory selection ui for better user experience.
+- ✅ Add demo script for getting started with aditi toolkit.
 - ✅ Add aditi command cheat sheet for cli tool reference.
 - ✅ Add automated gif to youtube mp4 conversion script and related demos.
 - ✅ Add workflow to automate claude.md updates with project state.
-- ✅ Implement robust claude.md updater with in-place updates.
-- ✅ Complete phase 3 journey session management implementation.
 
 ### Development Focus
 - **Ci/Cd**: 70 commits
-- **Features**: 20 commits
+- **Features**: 22 commits
 - **Bug Fixes**: 15 commits
 - **Documentation**: 15 commits
 - **Testing**: 11 commits
 
 ### Most Active Files
 - `docs/_data/recent_commits.yml`: 69 changes
-- `CLAUDE.md`: 52 changes
-- `src/aditi/commands/journey.py`: 13 changes
+- `CLAUDE.md`: 53 changes
+- `src/aditi/commands/journey.py`: 14 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
 ## Testing Guidelines

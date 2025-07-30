@@ -21,6 +21,52 @@ from ..rules import FixType
 console = Console()
 
 
+def get_path_suggestions(root_path: Path, partial_path: str) -> List[str]:
+    """Get path suggestions based on partial input.
+    
+    Args:
+        root_path: Repository root
+        partial_path: Partial path entered by user
+        
+    Returns:
+        List of suggested complete paths
+    """
+    suggestions = []
+    
+    # Clean the partial path
+    partial_path = partial_path.strip()
+    if partial_path.startswith('./'):
+        partial_path = partial_path[2:]
+    elif partial_path.startswith('/'):
+        partial_path = partial_path[1:]
+    
+    if '/' in partial_path:
+        # User is typing a nested path
+        parent_parts = partial_path.rsplit('/', 1)[0]
+        search_term = partial_path.rsplit('/', 1)[1].lower()
+        parent_path = root_path / parent_parts
+        
+        if parent_path.exists() and parent_path.is_dir():
+            try:
+                for item in parent_path.iterdir():
+                    if item.is_dir() and item.name.lower().startswith(search_term):
+                        suggestions.append(f"{parent_parts}/{item.name}")
+            except:
+                pass
+    else:
+        # Top-level directory search
+        search_term = partial_path.lower()
+        try:
+            for item in root_path.iterdir():
+                if item.is_dir() and not item.name.startswith('.'):
+                    if item.name.lower().startswith(search_term):
+                        suggestions.append(item.name)
+        except:
+            pass
+    
+    return suggestions[:5]  # Return max 5 suggestions
+
+
 def get_session_age(session_started: Optional[str]) -> Optional[str]:
     """Get human-readable age of session.
     
@@ -407,18 +453,18 @@ def configure_repository() -> bool:
     # Ask about path selection method
     console.print("\n📂 Directory Selection")
     path_choice = questionary.select(
-        "How would you like to specify directories to scan?",
+        "Which directories do you want to work on?",
         choices=[
-            "Use all auto-detected paths",
-            "Review and customize auto-detected paths",
+            "Process all directories with .adoc files",
+            "Let me choose specific directories",
             "Enter custom directory paths"
         ]
     ).ask()
 
-    if path_choice == "Use all auto-detected paths":
+    if path_choice == "Process all directories with .adoc files":
         # Use all directories with .adoc files
         selected_dirs = None
-    elif path_choice == "Review and customize auto-detected paths":
+    elif path_choice == "Let me choose specific directories":
         selected_dirs = select_directories(current_dir)
         if not selected_dirs:
             console.print("[red]No directories selected. Exiting.[/red]")
@@ -426,45 +472,106 @@ def configure_repository() -> bool:
     else:
         # Enter custom paths
         custom_paths = []
-        console.print("\nEnter directory paths (relative to repository root).")
+        console.print("\n📁 Enter Custom Directory Paths")
         console.print(f"[dim]Repository root: {current_dir}[/dim]")
-        console.print("Press Enter with empty input when done.\n")
+        
+        # Show available top-level directories to help users
+        console.print("\n[dim]Available directories:[/dim]")
+        try:
+            top_dirs = []
+            for item in current_dir.iterdir():
+                if item.is_dir() and not item.name.startswith('.'):
+                    # Check if it has .adoc files
+                    has_adoc = any(item.rglob("*.adoc"))
+                    if has_adoc:
+                        adoc_count = len(list(item.rglob("*.adoc")))
+                        top_dirs.append((item.name, adoc_count))
+            
+            if top_dirs:
+                # Sort by file count
+                top_dirs.sort(key=lambda x: x[1], reverse=True)
+                for dir_name, count in top_dirs[:10]:  # Show max 10
+                    console.print(f"  • {dir_name}/ ({count} .adoc files)")
+                if len(top_dirs) > 10:
+                    console.print(f"  [dim]... and {len(top_dirs) - 10} more directories[/dim]")
+            else:
+                console.print("  [dim]No directories with .adoc files found[/dim]")
+        except Exception:
+            pass
+        
+        console.print("\n[bold]Examples:[/bold]")
+        console.print("  • docs")
+        console.print("  • modules/api")
+        console.print("  • src/main/asciidoc")
+        console.print("\nPress Enter with empty input when done.\n")
         
         while True:
-            path_str = questionary.text("Directory path:").ask()
+            # Create autocomplete function
+            def path_completer(text):
+                if text:
+                    return get_path_suggestions(current_dir, text)
+                return []
+            
+            path_str = questionary.autocomplete(
+                "Directory path:",
+                choices=path_completer,
+                meta_information={
+                    "": "Start typing to see suggestions..."
+                }
+            ).ask()
+            
             if not path_str:
                 break
                 
-            # Clean up the path - remove leading slash if present
+            # Clean up the path - normalize various input formats
             path_str = path_str.strip()
-            if path_str.startswith('/'):
+            # Remove leading ./ or /
+            if path_str.startswith('./'):
+                path_str = path_str[2:]
+            elif path_str.startswith('/'):
                 path_str = path_str[1:]
+            # Remove trailing /
+            if path_str.endswith('/'):
+                path_str = path_str[:-1]
             
             path = Path(path_str)
             full_path = current_dir / path
             
             if full_path.exists() and full_path.is_dir():
-                custom_paths.append(path)
-                console.print(f"  ✓ Added: {path}")
+                # Check if it has .adoc files
+                adoc_files = list(full_path.rglob("*.adoc"))
+                if adoc_files:
+                    custom_paths.append(path)
+                    console.print(f"  ✓ Added: {path} ({len(adoc_files)} .adoc files)")
+                else:
+                    console.print(f"  [yellow]⚠ Warning: {path} has no .adoc files[/yellow]")
+                    add_anyway = questionary.confirm("Add anyway?", default=False).ask()
+                    if add_anyway:
+                        custom_paths.append(path)
+                        console.print(f"  ✓ Added: {path}")
             else:
-                console.print(f"  [red]✗ Invalid path: {path}[/red]")
-                console.print(f"    [dim]Looking for: {full_path}[/dim]")
+                console.print(f"  [red]✗ Directory not found: {path}[/red]")
+                
+                # Provide helpful suggestions
                 if not full_path.exists():
-                    console.print(f"    [dim]Path does not exist[/dim]")
-                    # Check what directories DO exist to help the user
+                    # Try to find similar directories
                     parent = full_path.parent
-                    while parent != current_dir and not parent.exists():
-                        parent = parent.parent
-                    if parent.exists() and parent != current_dir:
-                        console.print(f"    [dim]Last existing directory: {parent}[/dim]")
-                        # List subdirectories to help
+                    if parent.exists():
+                        similar = []
                         try:
-                            subdirs = [d.name for d in parent.iterdir() if d.is_dir()][:5]
-                            if subdirs:
-                                console.print(f"    [dim]Available subdirectories: {', '.join(subdirs)}[/dim]")
+                            for item in parent.iterdir():
+                                if item.is_dir() and path_str.lower() in item.name.lower():
+                                    similar.append(item.name)
                         except:
                             pass
-                elif not full_path.is_dir():
+                        
+                        if similar:
+                            console.print(f"    [dim]Did you mean one of these?[/dim]")
+                            for s in similar[:3]:
+                                console.print(f"    [dim]  • {parent.relative_to(current_dir)}/{s}[/dim]")
+                    else:
+                        console.print(f"    [dim]Parent directory doesn't exist: {parent.relative_to(current_dir)}[/dim]")
+                else:
                     console.print(f"    [dim]Path exists but is not a directory[/dim]")
         
         if not custom_paths:
@@ -517,31 +624,22 @@ def select_directories(root_path: Path) -> Optional[List[Path]]:
         console.print("[yellow]No AsciiDoc files found in the repository.[/yellow]")
         return []
 
-    # Find documentation roots
-    doc_roots = scanner.find_documentation_roots(adoc_dirs)
-
-    # Prepare choices for questionary
+    # Sort directories by file count (descending)
+    sorted_dirs = sorted(adoc_dirs.items(), key=lambda x: x[1], reverse=True)
+    
+    # Prepare choices - all pre-selected
     choices = []
-    for path, direct_count, total_count in doc_roots:
-        if direct_count == total_count:
-            label = f"{path} ({total_count} .adoc files)"
-        else:
-            label = f"{path} ({total_count} .adoc files total, {direct_count} direct)"
+    total_files = 0
+    for path, count in sorted_dirs:
+        label = f"{path} ({count:,} files)"
         choices.append(questionary.Choice(title=label, value=str(path), checked=True))
+        total_files += count
 
-    # Also add individual directories that aren't under any root
-    all_roots = {str(path) for path, _, _ in doc_roots}
-    for path, count in sorted(adoc_dirs.items()):
-        if str(path) not in all_roots:
-            choices.append(questionary.Choice(
-                title=f"{path} ({count} .adoc files)",
-                value=str(path),
-                checked=False
-            ))
+    console.print(f"\n🎯 Found documentation to process: {total_files:,} total files\n")
 
     # Multi-select prompt
     selected = questionary.checkbox(
-        "Detected documentation in (↑/↓ arrows to navigate, Space to select/deselect, Enter to confirm):",
+        "Select directories (Space to toggle, Enter to continue):",
         choices=choices
     ).ask()
 
@@ -550,60 +648,29 @@ def select_directories(root_path: Path) -> Optional[List[Path]]:
 
     # Convert back to Path objects
     selected_paths = [Path(p) for p in selected]
+    
+    # Calculate total selected files
+    selected_file_count = sum(adoc_dirs.get(path, 0) for path in selected_paths)
 
-    # Ask about using detected paths or custom
-    use_detected = questionary.select(
-        "Use these auto-detected paths or specify custom directory?",
-        choices=[
-            "Use detected paths",
-            "Enter custom directory paths"
-        ]
-    ).ask()
-
-    if use_detected == "Enter custom directory paths":
-        custom_paths = []
-        console.print("\nEnter directory paths (relative to repository root).")
-        console.print("Press Enter with empty input when done.\n")
-
-        while True:
-            path_str = questionary.text("Directory path:").ask()
-            if not path_str:
-                break
-
-            path = Path(path_str)
-            if (root_path / path).exists() and (root_path / path).is_dir():
-                custom_paths.append(path)
-                console.print(f"  ✓ Added: {path}")
-            else:
-                console.print(f"  [red]✗ Invalid path: {path}[/red]")
-
-        selected_paths = custom_paths
-
-    # Display selected directories
-    if selected_paths:
-        console.print("\n✓ Configuration saved to ~/aditi-data/config.json\n")
-        console.print("Selected directories:")
-        for path in selected_paths:
-            count = adoc_dirs.get(path, 0)
-            console.print(f"  • {path} ({count} .adoc files)")
-
-    # Confirmation
-    console.print()
+    # Show what was selected
+    console.print(f"\n✓ Selected {len(selected_paths)} directories with {selected_file_count:,} files")
+    
+    # Ask for confirmation with clearer options
     choice = questionary.select(
-        "These directory selections look correct?",
+        "Continue with these directories?",
         choices=[
-            "Y = Yes, continue",
-            "n = Exit",
-            "r = Reconfigure directories"
+            "Process all selected directories",
+            "Customize selection",
+            "Cancel"
         ],
-        default="Y = Yes, continue"
+        default="Process all selected directories"
     ).ask()
-
-    if choice == "n = Exit":
+    
+    if choice == "Cancel":
         return None
-    elif choice == "r = Reconfigure directories":
-        return select_directories(root_path)  # Recursive call
-
+    elif choice == "Customize selection":
+        return select_directories(root_path)  # Recursive call to re-select
+    
     return selected_paths
 
 
