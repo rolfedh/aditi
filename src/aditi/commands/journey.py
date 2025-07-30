@@ -174,26 +174,20 @@ def configure_repository() -> bool:
     path_choice = questionary.select(
         "How would you like to specify directories to scan?",
         choices=[
-            "Use auto-detected paths (scan for .adoc files)",
+            "Use all auto-detected paths",
+            "Review and customize auto-detected paths",
             "Enter custom directory paths"
         ]
     ).ask()
 
-    if path_choice == "Use auto-detected paths (scan for .adoc files)":
-        # Ask if they want to customize the auto-detected paths
-        customize = questionary.confirm(
-            "Would you like to review and customize the auto-detected paths?",
-            default=False
-        ).ask()
-        
-        if customize:
-            selected_dirs = select_directories(current_dir)
-            if not selected_dirs:
-                console.print("[red]No directories selected. Exiting.[/red]")
-                return False
-        else:
-            # Use all directories with .adoc files
-            selected_dirs = None
+    if path_choice == "Use all auto-detected paths":
+        # Use all directories with .adoc files
+        selected_dirs = None
+    elif path_choice == "Review and customize auto-detected paths":
+        selected_dirs = select_directories(current_dir)
+        if not selected_dirs:
+            console.print("[red]No directories selected. Exiting.[/red]")
+            return False
     else:
         # Enter custom paths
         custom_paths = []
@@ -421,7 +415,7 @@ def apply_rules_workflow() -> None:
             continue
 
         # Run Vale for just this specific rule
-        console.print(f"\n🔍 Checking for {rule_name} violations...\n")
+        console.print(f"\n🔍 Checking for {rule_name} issues...\n")
         with Progress(
             SpinnerColumn(),
             TextColumn("[progress.description]{task.description}"),
@@ -449,11 +443,11 @@ def apply_rules_workflow() -> None:
         # Parse the Vale output
         violations = processor.vale_parser.parse_json_output(vale_output)
         
-        # Filter to just this rule's violations (in case Vale returns others)
+        # Filter to just this rule's issues (in case Vale returns others)
         rule_violations = [v for v in violations if v.rule_name == rule_name]
         
         if not rule_violations:
-            continue  # No violations for this rule
+            continue  # No issues for this rule
 
         # Process this rule
         if not process_single_rule(rule, rule_violations, description, processor, config_manager):
@@ -469,7 +463,7 @@ def apply_rules_workflow() -> None:
     vale_container.cleanup()
 
 
-def process_single_rule(rule, violations, description, processor, config_manager) -> bool:
+def process_single_rule(rule, issues, description, processor, config_manager) -> bool:
     """Process a single rule with user interaction.
 
     Returns:
@@ -477,11 +471,11 @@ def process_single_rule(rule, violations, description, processor, config_manager
     """
     # Create a visual separator and prominent rule announcement
     console.print("\n" + "─" * 80)
-    console.print(f"\n🔧 [bold cyan]Processing {rule.name} issues[/bold cyan] [yellow]({len(violations)} found)[/yellow]\n")
+    console.print(f"\n🔧 [bold cyan]Processing {rule.name} issues[/bold cyan] [yellow]({len(issues)} found)[/yellow]\n")
     console.print(f"[bold]{rule.name}:[/bold] {description}\n")
 
     # Show affected files
-    files_affected = list(set(v.file_path for v in violations))
+    files_affected = list(set(v.file_path for v in issues))
     console.print("These files have this issue:")
     for i, file_path in enumerate(files_affected[:10]):
         rel_path = file_path.relative_to(Path.cwd())
@@ -533,7 +527,7 @@ def process_single_rule(rule, violations, description, processor, config_manager
     valid_choices = [c.lower() for c in choice_letters]
     if action_char not in valid_choices:
         console.print(f"[red]Invalid choice '{action}'. Please enter one of: {'/'.join(choice_letters)}[/red]")
-        return process_single_rule(rule, violations, description, processor, config_manager)
+        return process_single_rule(rule, issues, description, processor, config_manager)
 
     if action_char == 's':
         console.print("[yellow]Skipped.[/yellow]")
@@ -541,9 +535,9 @@ def process_single_rule(rule, violations, description, processor, config_manager
 
     # Apply fixes or flags
     if action_char == 'a':
-        apply_auto_fixes(rule, violations, processor, files_affected)
+        apply_auto_fixes(rule, issues, processor, files_affected)
     else:  # 'f'
-        apply_flags(rule, violations, processor, files_affected)
+        apply_flags(rule, issues, processor, files_affected)
 
     # Show completion message
     show_completion_message(rule, len(files_affected))
@@ -551,7 +545,7 @@ def process_single_rule(rule, violations, description, processor, config_manager
     return continue_prompt()
 
 
-def apply_auto_fixes(rule, violations, processor, files_affected):
+def apply_auto_fixes(rule, issues, processor, files_affected):
     """Apply automatic fixes for a rule."""
     console.print()
     with Progress(
@@ -566,7 +560,7 @@ def apply_auto_fixes(rule, violations, processor, files_affected):
         # Process each file
         fixes_applied = 0
         for file_path in files_affected:
-            file_violations = [v for v in violations if v.file_path == file_path]
+            file_issues = [v for v in issues if v.file_path == file_path]
 
             # Apply fixes to this file for the specific rule only
             result = processor.process_files([file_path], dry_run=False, rule_filter=rule.name)
@@ -578,14 +572,14 @@ def apply_auto_fixes(rule, violations, processor, files_affected):
     console.print(f"\n✓ Applied {fixes_applied} {rule.name} fixes.")
     for i, file_path in enumerate(files_affected[:5]):
         rel_path = file_path.relative_to(Path.cwd())
-        file_fixes = len([v for v in violations if v.file_path == file_path])
+        file_fixes = len([v for v in issues if v.file_path == file_path])
         console.print(f"  • {rel_path} ({file_fixes} {'fix' if file_fixes == 1 else 'fixes'})")
     if len(files_affected) > 5:
         console.print(f"  • ...")
         console.print(f"  [show the full list of files]")
 
 
-def apply_flags(rule, violations, processor, files_affected):
+def apply_flags(rule, issues, processor, files_affected):
     """Apply comment flags for a rule."""
     console.print()
     with Progress(
@@ -597,24 +591,24 @@ def apply_flags(rule, violations, processor, files_affected):
     ) as progress:
         task = progress.add_task("Applying flags...", total=len(files_affected))
 
-        # Flag each violation with a comment
+        # Flag each issue with a comment
         flags_applied = 0
         for file_path in files_affected:
-            file_violations = [v for v in violations if v.file_path == file_path]
+            file_issues = [v for v in issues if v.file_path == file_path]
 
             try:
                 content = file_path.read_text(encoding='utf-8')
                 lines = content.splitlines(keepends=True)
 
-                # Sort violations by line number (reverse to avoid offset issues)
-                sorted_violations = sorted(file_violations, key=lambda v: v.line, reverse=True)
+                # Sort issues by line number (reverse to avoid offset issues)
+                sorted_issues = sorted(file_issues, key=lambda v: v.line, reverse=True)
 
-                for violation in sorted_violations:
-                    if 0 < violation.line <= len(lines):
+                for issue in sorted_issues:
+                    if 0 < issue.line <= len(lines):
                         # Insert comment before the line (not at the line position)
-                        comment = f"// ADITI-{rule.name}: {violation.message}\n"
+                        comment = f"// ADITI-{rule.name}: {issue.message}\n"
                         # Insert at the line position, which pushes the original line down
-                        lines.insert(violation.line - 1, comment)
+                        lines.insert(issue.line - 1, comment)
                         flags_applied += 1
 
                 # Write back
@@ -629,7 +623,7 @@ def apply_flags(rule, violations, processor, files_affected):
     console.print(f"\n✓ Applied {flags_applied} {rule.name} flags.")
     for i, file_path in enumerate(files_affected[:5]):
         rel_path = file_path.relative_to(Path.cwd())
-        file_flags = len([v for v in violations if v.file_path == file_path])
+        file_flags = len([v for v in issues if v.file_path == file_path])
         console.print(f"  • {rel_path} ({file_flags} {'flag' if file_flags == 1 else 'flags'})")
     if len(files_affected) > 5:
         console.print(f"  • ...")

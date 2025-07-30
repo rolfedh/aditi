@@ -115,7 +115,7 @@ def fix_command(
         if rule:
             violations = [v for v in check_result.violations_found if v.rule_name == rule]
             if not violations:
-                console.print(f"\n[yellow]No {rule} violations found.[/yellow]")
+                console.print(f"\n[yellow]No {rule} issues found.[/yellow]")
                 return
         else:
             violations = check_result.violations_found

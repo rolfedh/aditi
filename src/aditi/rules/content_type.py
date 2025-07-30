@@ -134,6 +134,52 @@ class ContentTypeRule(Rule):
                 
         return 0
     
+    def find_insertion_point_after_comment_blocks(self, file_content: str) -> int:
+        """Find the appropriate insertion point after any initial comment blocks.
+        
+        This method ensures we don't insert attributes inside comment blocks.
+        Returns the line number after the last initial comment block, accounting
+        for any blank lines that should be preserved.
+        
+        Args:
+            file_content: The file content to search
+            
+        Returns:
+            Line number for insertion (1-based)
+        """
+        lines = file_content.splitlines()
+        in_comment_block = False
+        last_comment_block_end = 0
+        found_content_after_comments = False
+        
+        for i, line in enumerate(lines):
+            stripped = line.strip()
+            
+            # Check for comment block delimiters
+            if stripped == '////':
+                if not in_comment_block:
+                    in_comment_block = True
+                else:
+                    in_comment_block = False
+                    last_comment_block_end = i + 1
+            
+            # If we're past comment blocks and found non-comment content
+            elif not in_comment_block and last_comment_block_end > 0:
+                if stripped and not stripped.startswith('//'):
+                    found_content_after_comments = True
+                    break
+        
+        if last_comment_block_end > 0:
+            # We found comment blocks at the start
+            # Skip any blank lines after the comment block
+            insert_line = last_comment_block_end
+            while insert_line < len(lines) and not lines[insert_line].strip():
+                insert_line += 1
+            return insert_line + 1
+        else:
+            # No initial comment blocks, insert at line 1
+            return 1
+    
     def generate_fix(self, violation: Violation, file_content: str) -> Optional[Fix]:
         """Generate a fix for the violation."""
         if not self.can_fix(violation):
@@ -168,13 +214,18 @@ class ContentTypeRule(Rule):
             content_type = "TBD"
             
         # Determine where to insert the attribute
+        # First check for comment blocks to avoid inserting inside them
+        after_comment_line = self.find_insertion_point_after_comment_blocks(file_content)
         title_line = self.find_title_line(file_content)
+        
         if title_line == 0:
-            # No title found, insert at the beginning
-            insert_line = 1
+            # No title found, use the position after comment blocks
+            insert_line = after_comment_line
         else:
-            # Insert 2-3 lines before the title
-            insert_line = max(1, title_line - 3)
+            # We want to insert before the title but after any initial comment blocks
+            # Prefer 2-3 lines before title, but not before the comment block end
+            preferred_line = max(1, title_line - 3)
+            insert_line = max(after_comment_line, preferred_line)
             
         # Create the attribute line with blank line after
         attribute_line = f":_mod-docs-content-type: {content_type}\n"
