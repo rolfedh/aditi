@@ -91,6 +91,11 @@ Use the &#8594; arrow and the &#174; symbol.
 
 ## Important Rules
 
+### Template Reference Standards
+- **Canonical Templates**: Use `mod-docs-templates/` directory as the authoritative reference for mod-docs compliant AsciiDoc structure
+- **Content Placement**: When implementing fixes or modifications, refer to template files to determine proper content organization and placement
+- **Compliance Validation**: Templates serve as the gold standard for DITA migration readiness
+
 ### ContentType Rule (Prerequisite)
 - Detects missing/invalid `:_mod-docs-content-type:` attributes
 - Valid values: ASSEMBLY, CONCEPT, PROCEDURE, REFERENCE, SNIPPET
