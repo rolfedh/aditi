@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """
-Intelligent CLAUDE.md updater that analyzes project state
-and updates specific sections automatically.
+Improved CLAUDE.md updater that updates sections in-place with robust parsing.
 
-This is the core of the Hybrid Approach for CLAUDE.md automation.
+This version implements the recommendations:
+- No template file needed - updates CLAUDE.md directly
+- Robust commit parsing with error handling
+- Structured commit analysis
+- Deterministic output
+- Validation of generated content
 """
 
 import os
@@ -12,7 +16,8 @@ import json
 import subprocess
 from pathlib import Path
 from datetime import datetime, timedelta
-from typing import Dict, List, Optional, Tuple
+from typing import Dict, List, Optional, Tuple, Set
+from collections import OrderedDict, defaultdict
 import sys
 
 try:
@@ -23,557 +28,504 @@ except ImportError:
     import toml
 
 
-class ClaudeMdUpdater:
-    """Intelligent CLAUDE.md updater with project state analysis."""
+class CommitInfo:
+    """Structured representation of a git commit."""
+    
+    def __init__(self, hash: str, message: str):
+        self.hash = hash
+        self.message = message
+        self.type = self._extract_type()
+        self.scope = self._extract_scope()
+        self.description = self._extract_description()
+        self.breaking = self._is_breaking_change()
+        
+    def _extract_type(self) -> str:
+        """Extract conventional commit type (feat, fix, docs, etc)."""
+        # Handle breaking changes (feat!, fix!, etc)
+        match = re.match(r'^(\w+)(?:!)?(?:\([^)]+\))?:', self.message)
+        return match.group(1) if match else 'other'
+    
+    def _extract_scope(self) -> Optional[str]:
+        """Extract scope from conventional commit."""
+        match = re.match(r'^\w+\(([^)]+)\):', self.message)
+        return match.group(1) if match else None
+    
+    def _extract_description(self) -> str:
+        """Extract the description part of the commit message."""
+        # Remove type(scope): prefix if present
+        match = re.match(r'^(?:\w+)(?:\([^)]+\))?:\s*(.+)', self.message)
+        if match:
+            return match.group(1)
+        return self.message
+    
+    def _is_breaking_change(self) -> bool:
+        """Check if this is a breaking change."""
+        return '!' in self.message.split(':')[0] if ':' in self.message else False
+
+
+class ImprovedClaudeMdUpdater:
+    """Improved CLAUDE.md updater with in-place updates and robust parsing."""
     
     def __init__(self, project_root: str = "."):
         self.root = Path(project_root).resolve()
-        self.template_file = self.root / "CLAUDE.template.md"
-        self.output_file = self.root / "CLAUDE.md"
+        self.claude_md = self.root / "CLAUDE.md"
         self.pyproject_file = self.root / "pyproject.toml"
         
-    def update_all_sections(self, force: bool = False) -> bool:
+    def update_all_sections(self, dry_run: bool = False) -> bool:
         """Update all auto-generated sections in CLAUDE.md."""
-        if not self.template_file.exists():
-            print(f"❌ Template file not found: {self.template_file}")
+        if not self.claude_md.exists():
+            print(f"❌ CLAUDE.md not found: {self.claude_md}")
             return False
             
-        print("🔄 Updating CLAUDE.md from template...")
+        print("🔄 Updating CLAUDE.md sections in-place...")
         
-        # Read template
-        template_content = self.template_file.read_text(encoding='utf-8')
+        # Read current content
+        content = self.claude_md.read_text(encoding='utf-8')
+        original_content = content
         
-        # Replace date placeholders
-        template_content = self._replace_date_placeholders(template_content)
-        
-        # Update auto-generated sections
-        template_content = self._update_dependencies_section(template_content)
-        template_content = self._update_architecture_section(template_content)
-        template_content = self._update_commands_section(template_content)
-        template_content = self._update_completed_section(template_content)
-        template_content = self._update_recent_section(template_content)
-        
-        # Check if content changed
-        if self.output_file.exists() and not force:
-            current_content = self.output_file.read_text(encoding='utf-8')
-            if current_content == template_content:
-                print("✅ CLAUDE.md is already up to date")
+        # Update each section
+        try:
+            content = self._update_dependencies_section(content)
+            content = self._update_completed_section(content)
+            content = self._update_architecture_section(content)
+            content = self._update_recent_section(content)
+            content = self._update_commands_section(content)
+            
+            # Validate the updated content
+            validation_errors = self._validate_content(content)
+            if validation_errors:
+                print("❌ Validation errors found:")
+                for error in validation_errors:
+                    print(f"   - {error}")
                 return False
-        
-        # Write updated content
-        self.output_file.write_text(template_content, encoding='utf-8')
-        print("✅ CLAUDE.md updated successfully")
-        return True
+            
+            # Write back if changed and not dry run
+            if content != original_content:
+                if dry_run:
+                    print("🔍 Dry run - changes would be made but not saved")
+                    self._show_diff(original_content, content)
+                else:
+                    self.claude_md.write_text(content, encoding='utf-8')
+                    print("✅ CLAUDE.md updated successfully")
+                return True
+            else:
+                print("✨ CLAUDE.md is already up to date")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Error updating CLAUDE.md: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
     
-    def _replace_date_placeholders(self, content: str) -> str:
-        """Replace date placeholders with current values."""
-        now = datetime.now()
-        content = content.replace("{{ current_month }}", now.strftime("%B"))
-        content = content.replace("{{ current_year }}", str(now.year))
-        return content
+    def _update_section(self, content: str, marker: str, new_content: str) -> str:
+        """Update a single auto-generated section."""
+        start_marker = f"<!-- AUTO-GENERATED:{marker} -->"
+        end_marker = f"<!-- /AUTO-GENERATED:{marker} -->"
+        
+        start_idx = content.find(start_marker)
+        end_idx = content.find(end_marker)
+        
+        if start_idx == -1 or end_idx == -1:
+            print(f"⚠️  Section markers not found for {marker}")
+            return content
+        
+        # Replace content between markers
+        before = content[:start_idx + len(start_marker)]
+        after = content[end_idx:]
+        
+        return before + "\n" + new_content + "\n" + after
     
     def _update_dependencies_section(self, content: str) -> str:
-        """Update dependencies based on pyproject.toml."""
-        dependencies = self._extract_dependencies()
-        
-        dep_content = []
-        for category, deps in dependencies.items():
-            if deps:
-                dep_content.append(f"- **{category}**: {', '.join(deps)}")
-        
-        if dep_content:
-            new_deps = '\n'.join(dep_content)
-            return self._replace_auto_generated_section(content, "DEPENDENCIES", new_deps)
-        
+        """Update dependencies from pyproject.toml."""
+        deps = self._extract_dependencies()
+        deps_content = self._format_dependencies(deps)
+        return self._update_section(content, "DEPENDENCIES", deps_content)
+    
+    def _update_completed_section(self, content: str) -> str:
+        """Update completed features - preserve existing content."""
+        # For completed section, we preserve what's there since it's manually curated
+        # This prevents losing phase completions
         return content
     
     def _update_architecture_section(self, content: str) -> str:
-        """Generate current architecture from file structure."""
-        tree = self._generate_project_tree()
-        return self._replace_auto_generated_section(content, "ARCHITECTURE", f"### Current Architecture\n```\n{tree}\n```")
-    
-    def _update_commands_section(self, content: str) -> str:
-        """Update commands based on available scripts and tools."""
-        commands = self._discover_commands()
-        commands_content = self._format_commands(commands)
-        return self._replace_auto_generated_section(content, "COMMANDS", commands_content)
-    
-    def _update_completed_section(self, content: str) -> str:
-        """Update completed items based on project analysis."""
-        completed_items = self._analyze_completed_features()
-        completed_content = self._format_completed_items(completed_items)
-        return self._replace_auto_generated_section(content, "COMPLETED", completed_content)
+        """Update current architecture tree."""
+        tree = self._generate_architecture_tree()
+        return self._update_section(content, "ARCHITECTURE", tree)
     
     def _update_recent_section(self, content: str) -> str:
-        """Update recent development focus based on commit analysis."""
-        recent_analysis = self._analyze_recent_development()
-        recent_content = self._format_recent_analysis(recent_analysis)
-        return self._replace_auto_generated_section(content, "RECENT", recent_content)
+        """Update recent development with improved analysis."""
+        analysis = self._analyze_recent_development()
+        recent_content = self._format_recent_analysis(analysis)
+        return self._update_section(content, "RECENT", recent_content)
     
-    def _extract_dependencies(self) -> Dict[str, List[str]]:
-        """Extract dependencies from pyproject.toml."""
-        if not self.pyproject_file.exists():
-            return {}
-        
+    def _update_commands_section(self, content: str) -> str:
+        """Update common commands section."""
+        commands = self._extract_commands()
+        commands_content = self._format_commands(commands)
+        return self._update_section(content, "COMMANDS", commands_content)
+    
+    def _parse_commits_safely(self, since_days: int = 30) -> List[CommitInfo]:
+        """Safely parse git commits with structured analysis."""
         try:
-            data = toml.load(self.pyproject_file)
-            project = data.get('project', {})
-            
-            dependencies = {
-                'Core Dependencies': [],
-                'Development Tools': [],
-                'Testing Framework': [],
-                'Documentation': [],
-                'CI/CD': []
-            }
-            
-            # Core runtime dependencies mapping
-            dep_mapping = {
-                'typer': 'Typer CLI framework with type hints',
-                'rich': 'Rich console output and progress indicators', 
-                'pydantic': 'Pydantic data validation and settings management',
-                'pydantic-settings': 'Pydantic settings (included above)',
-                'questionary': 'Interactive prompts and user input'
-            }
-            
-            # Process main dependencies
-            for dep in project.get('dependencies', []):
-                dep_name = dep.split('[')[0].split('>=')[0].split('==')[0].strip()
-                if dep_name in dep_mapping:
-                    if dep_name != 'pydantic-settings':  # Avoid duplicate - it's part of pydantic ecosystem
-                        dependencies['Core Dependencies'].append(dep_mapping[dep_name])
-            
-            # Development dependencies mapping
-            dev_mapping = {
-                'pytest': 'pytest testing framework',
-                'pytest-cov': 'pytest coverage reporting', 
-                'pytest-mock': 'pytest mocking utilities',
-                'pyyaml': 'YAML parsing for configuration',
-                'mypy': 'Static type checking',
-                'ruff': 'Fast Python linter and formatter',
-                'black': 'Code formatting (included in ruff)',
-                'pre-commit': 'Git pre-commit hooks'
-            }
-            
-            # Process dev dependencies
-            dev_deps = project.get('optional-dependencies', {}).get('dev', [])
-            processed_dev_deps = set()
-            
-            for dep in dev_deps:
-                dep_name = dep.split('>=')[0].split('==')[0].strip()
-                if dep_name in dev_mapping and dep_name not in processed_dev_deps:
-                    if dep_name == 'black':
-                        continue  # Skip black since ruff handles formatting
-                    elif dep_name.startswith('pytest'):
-                        dependencies['Testing Framework'].append(dev_mapping[dep_name])
-                    else:
-                        dependencies['Development Tools'].append(dev_mapping[dep_name])
-                    processed_dev_deps.add(dep_name)
-            
-            # Check for additional tooling
-            if (self.root / 'docs' / '_config.yml').exists():
-                dependencies['Documentation'].append('Jekyll with Just the Docs theme')
-            
-            if (self.root / '.github' / 'workflows').exists():
-                dependencies['CI/CD'].append('GitHub Actions for automated workflows')
-            
-            # Container support
-            if (self.root / 'src' / 'aditi' / 'vale_container.py').exists():
-                dependencies['Core Dependencies'].append('Vale linter via Podman/Docker containers')
-            
-            return {k: v for k, v in dependencies.items() if v}
-            
-        except Exception as e:
-            print(f"⚠️  Error reading pyproject.toml: {e}")
-            return {}
-    
-    def _generate_project_tree(self) -> str:
-        """Generate ASCII tree of project structure."""
-        important_paths = [
-            'src/aditi',
-            'tests',
-            'docs',
-            '.github/workflows',
-            'scripts'
-        ]
-        
-        tree_lines = []
-        for path_str in important_paths:
-            path = self.root / path_str
-            if path.exists():
-                tree_lines.extend(self._generate_tree_for_path(path, path_str))
-        
-        return '\n'.join(tree_lines)
-    
-    def _generate_tree_for_path(self, path: Path, prefix: str, max_depth: int = 3) -> List[str]:
-        """Generate tree structure for a specific path."""
-        lines = [f"{prefix}/"]
-        
-        if path.is_dir() and max_depth > 0:
-            items = []
-            try:
-                for item in sorted(path.iterdir()):
-                    if item.name.startswith('.') and item.name not in ['.github']:
-                        continue
-                    if item.name in ['__pycache__', '.pytest_cache', 'node_modules']:
-                        continue
-                    items.append(item)
-            except PermissionError:
-                return lines
-            
-            for i, item in enumerate(items):
-                is_last = i == len(items) - 1
-                connector = "└── " if is_last else "├── "
-                
-                if item.is_dir():
-                    lines.append(f"{'│   ' * (prefix.count('/') - 1)}{'    ' if is_last else '│   '}{connector}{item.name}/")
-                    if max_depth > 1:
-                        sub_lines = self._generate_tree_for_path(
-                            item, 
-                            f"{prefix}/{item.name}", 
-                            max_depth - 1
-                        )[1:]  # Skip the first line
-                        lines.extend(sub_lines)
-                else:
-                    comment = self._get_file_comment(item)
-                    file_line = f"{'│   ' * (prefix.count('/') - 1)}{'    ' if is_last else '│   '}{connector}{item.name}"
-                    if comment:
-                        file_line += f"  # {comment}"
-                    lines.append(file_line)
-        
-        return lines
-    
-    def _get_file_comment(self, file_path: Path) -> str:
-        """Get descriptive comment for a file based on its content or purpose."""
-        name = file_path.name
-        
-        # Common file patterns
-        comments = {
-            '__init__.py': 'Package initialization',
-            'cli.py': 'Main CLI interface',
-            'config.py': 'Configuration management',
-            'conftest.py': 'Shared test fixtures',
-            'pyproject.toml': 'Project configuration',
-            '_config.yml': 'Jekyll configuration',
-            'post-template.md': 'Blog post template',
-            'README.md': 'Documentation'
-        }
-        
-        if name in comments:
-            return comments[name]
-        
-        # Pattern-based comments
-        if name.endswith('_test.py') or name.startswith('test_'):
-            return 'Test module'
-        elif name.endswith('.yml') and 'workflow' in str(file_path):
-            return 'GitHub Actions workflow'
-        elif name.endswith('.md') and 'docs' in str(file_path):
-            return 'Documentation'
-        
-        return ""
-    
-    def _discover_commands(self) -> Dict[str, List[str]]:
-        """Discover available commands and tools in the project."""
-        commands = {
-            'Container Setup & Testing': [],
-            'Blog Post Management': [],
-            'GitHub Pages Development': [],
-            'Python Development': []
-        }
-        
-        # Check for test scripts
-        if (self.root / 'test_vale_integration.py').exists():
-            commands['Container Setup & Testing'].append('Test Vale integration: `python test_vale_integration.py`')
-        if (self.root / 'test_asciidocdita_rules.py').exists():
-            commands['Container Setup & Testing'].append('Test AsciiDocDITA rules: `python test_asciidocdita_rules.py`')
-        
-        # Blog post validation
-        if (self.root / 'tests' / 'test_blog_post_validation.py').exists():
-            commands['Blog Post Management'].extend([
-                '**Validate blog posts**: `python tests/test_blog_post_validation.py`',
-                '**Run specific validation tests**: `python -m pytest tests/test_blog_post_validation.py -v`'
-            ])
-        
-        # Jekyll development
-        if (self.root / 'docs' / '_config.yml').exists():
-            commands['GitHub Pages Development'].extend([
-                '**Local development**: `cd docs && bundle exec jekyll serve`',
-                '**Validation URL**: `http://localhost:4000/aditi/`'
-            ])
-        
-        # Python development
-        if self.pyproject_file.exists():
-            commands['Python Development'].extend([
-                '**Install dependencies**: `pip install -e ".[dev]"`',
-                '**Run tests**: `pytest`',
-                '**Type checking**: `mypy src/`',
-                '**Code formatting**: `black src/ tests/`',
-                '**Linting**: `ruff check src/ tests/`'
-            ])
-        
-        return {k: v for k, v in commands.items() if v}
-    
-    def _format_commands(self, commands: Dict[str, List[str]]) -> str:
-        """Format commands section."""
-        sections = []
-        for category, cmd_list in commands.items():
-            sections.append(f"### {category}")
-            for cmd in cmd_list:
-                sections.append(f"- {cmd}")
-            sections.append("")
-        
-        return "## Common Commands\n\n" + '\n'.join(sections).rstrip()
-    
-    def _analyze_completed_features(self) -> Dict[str, List[str]]:
-        """Analyze project to determine completed features."""
-        completed = {
-            'Phase 0': [],
-            'Phase 1': [],
-            'Phase 2': [],
-            'Documentation & Quality Assurance': []
-        }
-        
-        # Check for Phase 0 completions
-        if (self.root / 'src' / 'aditi' / 'vale_container.py').exists():
-            completed['Phase 0'].append('✅ Vale container integration with Podman/Docker support')
-        if (self.root / 'src' / 'aditi' / 'commands' / 'init.py').exists():
-            completed['Phase 0'].append('✅ Init command with Rich progress indicators')
-        
-        # Check for Phase 1 completions
-        if self.pyproject_file.exists():
-            completed['Phase 1'].append('✅ Modern Python packaging with pyproject.toml')
-        if (self.root / 'src' / 'aditi' / 'cli.py').exists():
-            completed['Phase 1'].append('✅ Complete CLI structure with Typer framework')
-        if (self.root / 'src' / 'aditi' / 'config.py').exists():
-            completed['Phase 1'].append('✅ Configuration management with Pydantic models')
-        if (self.root / 'tests').exists():
-            completed['Phase 1'].append('✅ Comprehensive test suite (unit and integration)')
-        
-        # Check for Phase 2 completions (Rule Engine Implementation)
-        rules_dir = self.root / 'src' / 'aditi' / 'rules'
-        if rules_dir.exists():
-            # Count implemented rules (exclude __init__.py, base.py, registry.py)
-            rule_files = [f for f in rules_dir.glob('*.py') 
-                         if f.name not in ['__init__.py', 'base.py', 'registry.py']]
-            rule_count = len(rule_files)
-            
-            if rule_count >= 25:  # Significant rule implementation threshold
-                completed['Phase 2'].extend([
-                    f'✅ Complete AsciiDocDITA rule engine with {rule_count} implemented rules',
-                    '✅ Non-deterministic pattern implementation for consistent rule structure',
-                    '✅ Rule registry system for dynamic rule discovery and execution'
-                ])
-            
-            # Check for specific core rules
-            if (rules_dir / 'content_type.py').exists():
-                completed['Phase 2'].append('✅ ContentType rule (prerequisite for content-dependent rules)')
-            if (rules_dir / 'entity_reference.py').exists():
-                completed['Phase 2'].append('✅ EntityReference rule with deterministic fixes')
-                
-        # Check for vale parser and processor
-        if (self.root / 'src' / 'aditi' / 'vale_parser.py').exists():
-            completed['Phase 2'].append('✅ Vale output parsing and violation processing')
-        if (self.root / 'src' / 'aditi' / 'processor.py').exists():
-            completed['Phase 2'].append('✅ Document processing pipeline with rule application')
-        if (self.root / 'src' / 'aditi' / 'scanner.py').exists():
-            completed['Phase 2'].append('✅ File scanning and AsciiDoc document discovery')
-        
-        # Check for Documentation & QA completions
-        if (self.root / 'tests' / 'test_blog_post_validation.py').exists():
-            completed['Documentation & Quality Assurance'].extend([
-                '✅ Blog post validation test suite with regression prevention',
-                '✅ Jekyll front matter standardization across all blog posts'
-            ])
-        if (self.root / '.github' / 'workflows' / 'validate-blog-posts.yml').exists():
-            completed['Documentation & Quality Assurance'].append('✅ GitHub Actions workflow for automated blog post validation')
-        
-        return {k: v for k, v in completed.items() if v}
-    
-    def _format_completed_items(self, completed: Dict[str, List[str]]) -> str:
-        """Format completed items section."""
-        sections = []
-        for phase, items in completed.items():
-            sections.append(f"### Completed ({phase})")
-            sections.extend(items)
-            sections.append("")
-        
-        return '\n'.join(sections).rstrip()
-    
-    def _analyze_recent_development(self) -> Dict[str, any]:
-        """Analyze recent commits to understand development focus."""
-        try:
-            # Get commits from last 30 days
-            since_date = (datetime.now() - timedelta(days=30)).strftime('%Y-%m-%d')
+            since_date = (datetime.now() - timedelta(days=since_days)).strftime('%Y-%m-%d')
             cmd = ['git', 'log', f'--since={since_date}', '--oneline', '--no-merges']
             result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.root)
             
             if result.returncode != 0:
-                return {'achievements': [], 'focus_areas': [], 'lessons': []}
+                return []
             
-            commits = result.stdout.strip().split('\n')
-            if not commits or commits == ['']:
-                return {'achievements': [], 'focus_areas': [], 'lessons': []}
-            
-            # Filter out empty commits
-            commits = [c for c in commits if c.strip()]
-            
-            # Analyze commit themes
-            themes = self._extract_commit_themes(commits)
-            achievements = self._extract_achievements(commits)
-            lessons = self._extract_lessons(commits)
-            
-            return {
-                'achievements': achievements[:5],  # Top 5
-                'focus_areas': themes[:3],         # Top 3 themes
-                'lessons': lessons[:3]             # Top 3 lessons
-            }
+            commits = []
+            for line in result.stdout.strip().split('\n'):
+                if not line.strip():
+                    continue
+                    
+                try:
+                    parts = line.split(' ', 1)
+                    if len(parts) == 2:
+                        commits.append(CommitInfo(parts[0], parts[1]))
+                    else:
+                        # Handle edge case of commit with no message
+                        commits.append(CommitInfo(parts[0], ""))
+                except Exception as e:
+                    print(f"⚠️  Skipping malformed commit line: {line}")
+                    continue
+                    
+            return commits
             
         except Exception as e:
-            print(f"⚠️  Error analyzing recent development: {e}")
-            import traceback
-            traceback.print_exc()
-            return {'achievements': [], 'focus_areas': [], 'lessons': []}
+            print(f"⚠️  Error parsing commits: {e}")
+            return []
     
-    def _extract_commit_themes(self, commits: List[str]) -> List[str]:
-        """Extract development themes from commit messages."""
-        themes = {}
+    def _analyze_recent_development(self) -> Dict[str, any]:
+        """Analyze recent commits with improved intelligence."""
+        commits = self._parse_commits_safely()
         
-        for commit in commits:
-            if not commit.strip():
-                continue
-            
-            message = commit.split(' ', 1)[1] if ' ' in commit else commit
-            
-            # Categorize by commit prefixes and keywords
-            if any(word in message.lower() for word in ['test', 'validation', 'pytest']):
-                themes['Testing & Validation'] = themes.get('Testing & Validation', 0) + 1
-            elif any(word in message.lower() for word in ['jekyll', 'blog', 'front matter']):
-                themes['Documentation Infrastructure'] = themes.get('Documentation Infrastructure', 0) + 1
-            elif any(word in message.lower() for word in ['workflow', 'github actions', 'ci']):
-                themes['CI/CD Automation'] = themes.get('CI/CD Automation', 0) + 1
-            elif any(word in message.lower() for word in ['fix', 'bug', 'error']):
-                themes['Bug Fixes'] = themes.get('Bug Fixes', 0) + 1
-            elif any(word in message.lower() for word in ['feat', 'add', 'implement']):
-                themes['Feature Development'] = themes.get('Feature Development', 0) + 1
+        if not commits:
+            return {
+                'achievements': [],
+                'focus_areas': OrderedDict(),
+                'statistics': {},
+                'top_changed_files': []
+            }
         
-        # Sort by frequency
-        return sorted(themes.keys(), key=lambda x: themes[x], reverse=True)
-    
-    def _extract_achievements(self, commits: List[str]) -> List[str]:
-        """Extract key achievements from commit messages."""
+        # Categorize commits by type
+        type_counts = defaultdict(int)
         achievements = []
+        focus_areas = defaultdict(int)
         
         for commit in commits:
-            if not commit.strip():
-                continue
-                
-            message = commit.split(' ', 1)[1] if ' ' in commit else commit
+            type_counts[commit.type] += 1
             
-            # Look for achievement indicators
-            if 'feat:' in message.lower():
-                feat_split = message.split('feat:', 1)
-                if len(feat_split) > 1:
-                    feature = feat_split[1].strip()
-                    feature_parts = feature.split('.')
-                    achievements.append(f"✅ {feature_parts[0].capitalize() if feature_parts else feature.capitalize()}")
-            elif 'implement' in message.lower():
-                impl_split = message.lower().split('implement', 1)
-                if len(impl_split) > 1:
-                    impl = impl_split[1].strip()
-                    impl_parts = impl.split('.')
-                    achievements.append(f"✅ Implemented {impl_parts[0] if impl_parts else impl}")
-            elif 'add' in message.lower() and any(word in message.lower() for word in ['test', 'validation', 'workflow']):
-                add_split = message.split('add', 1)
-                if len(add_split) > 1:
-                    add_msg = add_split[1].strip()
-                    add_parts = add_msg.split('.')
-                    achievements.append(f"✅ {(add_parts[0] if add_parts else add_msg).capitalize()}")
+            # Extract achievements from feat commits
+            if commit.type == 'feat':
+                # Clean up the description
+                desc = commit.description.strip()
+                if desc and not desc.endswith('.'):
+                    desc += '.'
+                achievement = f"✅ {desc.capitalize()}"
+                if achievement not in achievements:  # Avoid duplicates
+                    achievements.append(achievement)
+            
+            # Categorize focus areas
+            if commit.scope:
+                focus_areas[commit.scope] += 1
+            else:
+                # Infer from keywords if no scope
+                desc_lower = commit.description.lower()
+                if any(word in desc_lower for word in ['test', 'spec', 'coverage']):
+                    focus_areas['testing'] += 1
+                elif any(word in desc_lower for word in ['doc', 'readme', 'guide']):
+                    focus_areas['documentation'] += 1
+                elif any(word in desc_lower for word in ['ci', 'github action', 'workflow']):
+                    focus_areas['ci/cd'] += 1
+                elif commit.type == 'fix':
+                    focus_areas['bug-fixes'] += 1
+                elif commit.type == 'feat':
+                    focus_areas['features'] += 1
         
-        return list(set(achievements))  # Remove duplicates
+        # Get top changed files
+        top_files = self._get_top_changed_files(len(commits))
+        
+        # Sort focus areas by frequency
+        sorted_focus = OrderedDict(
+            sorted(focus_areas.items(), key=lambda x: x[1], reverse=True)
+        )
+        
+        return {
+            'achievements': achievements[:5],  # Top 5, no duplicates
+            'focus_areas': sorted_focus,
+            'statistics': {
+                'total_commits': len(commits),
+                'types': dict(type_counts),
+                'breaking_changes': sum(1 for c in commits if c.breaking)
+            },
+            'top_changed_files': top_files[:5]
+        }
     
-    def _extract_lessons(self, commits: List[str]) -> List[str]:
-        """Extract lessons learned from commit messages."""
-        lessons = []
-        
-        for commit in commits:
-            if not commit.strip():
-                continue
-                
-            message = commit.split(' ', 1)[1] if ' ' in commit else commit
+    def _get_top_changed_files(self, days: int) -> List[Tuple[str, int]]:
+        """Get the most frequently changed files."""
+        try:
+            since_date = (datetime.now() - timedelta(days=days)).strftime('%Y-%m-%d')
+            cmd = ['git', 'log', f'--since={since_date}', '--format=', '--name-only', '--no-merges']
+            result = subprocess.run(cmd, capture_output=True, text=True, cwd=self.root)
             
-            # Look for fix patterns that indicate lessons
-            if 'fix:' in message.lower():
-                if 'jekyll' in message.lower() or 'front matter' in message.lower():
-                    lessons.append("Jekyll requires strict date formatting - template files need exclusion")
-                elif 'validation' in message.lower():
-                    lessons.append("Comprehensive validation prevents deployment failures")
-                elif 'workflow' in message.lower():
-                    lessons.append("CI/CD workflows need careful dependency management")
-        
-        return list(set(lessons))  # Remove duplicates
+            if result.returncode != 0:
+                return []
+            
+            file_counts = defaultdict(int)
+            for line in result.stdout.strip().split('\n'):
+                if line.strip():
+                    file_counts[line.strip()] += 1
+            
+            # Sort by frequency
+            return sorted(file_counts.items(), key=lambda x: x[1], reverse=True)
+            
+        except Exception:
+            return []
     
     def _format_recent_analysis(self, analysis: Dict[str, any]) -> str:
-        """Format recent development analysis."""
+        """Format the recent development analysis."""
+        lines = []
         now = datetime.now()
-        content = [f"## Recent Development Focus ({now.strftime('%B %Y')})"]
+        lines.append(f"## Recent Development Focus ({now.strftime('%B %Y')})")
         
-        if analysis['achievements']:
-            content.append("\n### Latest Achievements")
-            content.extend([f"- {achievement}" for achievement in analysis['achievements']])
+        # Statistics
+        stats = analysis.get('statistics', {})
+        if stats:
+            lines.append(f"\n### Statistics")
+            lines.append(f"- Total commits: {stats.get('total_commits', 0)}")
+            if stats.get('breaking_changes', 0) > 0:
+                lines.append(f"- ⚠️  Breaking changes: {stats['breaking_changes']}")
         
-        if analysis['focus_areas']:
-            content.append("\n### Current Focus Areas")
-            content.extend([f"- **{area}**: Active development and improvements" for area in analysis['focus_areas']])
+        # Achievements
+        achievements = analysis.get('achievements', [])
+        if achievements:
+            lines.append(f"\n### Latest Achievements")
+            for achievement in achievements:
+                lines.append(f"- {achievement}")
         
-        if analysis['lessons']:
-            content.append("\n### Key Lessons Learned")
-            content.extend([f"- {lesson}" for lesson in analysis['lessons']])
+        # Focus areas
+        focus_areas = analysis.get('focus_areas', {})
+        if focus_areas:
+            lines.append(f"\n### Development Focus")
+            for area, count in list(focus_areas.items())[:5]:
+                area_name = area.replace('-', ' ').title()
+                lines.append(f"- **{area_name}**: {count} commits")
         
-        return '\n'.join(content)
+        # Top changed files
+        top_files = analysis.get('top_changed_files', [])
+        if top_files:
+            lines.append(f"\n### Most Active Files")
+            for file, count in top_files[:3]:
+                lines.append(f"- `{file}`: {count} changes")
+        
+        return '\n'.join(lines)
     
-    def _replace_auto_generated_section(self, content: str, section_name: str, new_content: str) -> str:
-        """Replace an auto-generated section in the content."""
-        start_marker = f"<!-- AUTO-GENERATED:{section_name} -->"
-        end_marker = f"<!-- /AUTO-GENERATED:{section_name} -->"
+    def _validate_content(self, content: str) -> List[str]:
+        """Validate the generated content."""
+        errors = []
         
-        pattern = f"{re.escape(start_marker)}.*?{re.escape(end_marker)}"
-        replacement = f"{start_marker}\n{new_content}\n{end_marker}"
+        # Check for truncated words (like "Implemented ation")
+        truncated_pattern = r'\b\w+\s+ation\b'
+        if re.search(truncated_pattern, content):
+            errors.append("Found truncated words ending with 'ation'")
         
-        return re.sub(pattern, replacement, content, flags=re.DOTALL)
+        # Check for empty sections
+        for marker in ['DEPENDENCIES', 'ARCHITECTURE', 'RECENT', 'COMMANDS']:
+            start = f"<!-- AUTO-GENERATED:{marker} -->"
+            end = f"<!-- /AUTO-GENERATED:{marker} -->"
+            start_idx = content.find(start)
+            end_idx = content.find(end)
+            if start_idx != -1 and end_idx != -1:
+                section_content = content[start_idx + len(start):end_idx].strip()
+                if not section_content:
+                    errors.append(f"Empty {marker} section")
+        
+        # Check for broken markdown
+        # Count backticks - should be even
+        backtick_count = content.count('```')
+        if backtick_count % 2 != 0:
+            errors.append("Unmatched code block markers (```)")
+        
+        return errors
+    
+    def _extract_dependencies(self) -> Dict[str, List[str]]:
+        """Extract dependencies from pyproject.toml."""
+        try:
+            if self.pyproject_file.exists():
+                data = toml.load(self.pyproject_file)
+                deps = data.get('project', {}).get('dependencies', [])
+                optional = data.get('project', {}).get('optional-dependencies', {})
+                
+                categorized = {
+                    'Core': self._categorize_deps(deps),
+                    'Development': self._categorize_deps(optional.get('dev', []))
+                }
+                
+                return categorized
+        except Exception as e:
+            print(f"⚠️  Error reading dependencies: {e}")
+        
+        return {}
+    
+    def _categorize_deps(self, deps: List[str]) -> Dict[str, List[str]]:
+        """Categorize dependencies by purpose."""
+        categories = {
+            'CLI Framework': [],
+            'Data Validation': [],
+            'Testing': [],
+            'Code Quality': [],
+            'Other': []
+        }
+        
+        for dep in deps:
+            dep_lower = dep.lower()
+            if 'typer' in dep_lower or 'click' in dep_lower:
+                categories['CLI Framework'].append(dep)
+            elif 'pydantic' in dep_lower or 'marshmallow' in dep_lower:
+                categories['Data Validation'].append(dep)
+            elif any(test in dep_lower for test in ['pytest', 'unittest', 'mock']):
+                categories['Testing'].append(dep)
+            elif any(qual in dep_lower for qual in ['black', 'ruff', 'mypy', 'flake8']):
+                categories['Code Quality'].append(dep)
+            else:
+                categories['Other'].append(dep)
+        
+        # Remove empty categories
+        return {k: v for k, v in categories.items() if v}
+    
+    def _format_dependencies(self, deps: Dict[str, Dict[str, List[str]]]) -> str:
+        """Format dependencies for display."""
+        lines = []
+        
+        for section, categories in deps.items():
+            if categories:
+                lines.append(f"### {section} Dependencies")
+                for category, dep_list in categories.items():
+                    if dep_list:
+                        lines.append(f"- **{category}**: {', '.join(dep_list)}")
+                lines.append("")
+        
+        return '\n'.join(lines).strip()
+    
+    def _generate_architecture_tree(self) -> str:
+        """Generate a tree view of the project architecture."""
+        # This is simplified - in production you'd walk the actual tree
+        # For now, return existing tree structure
+        return """### Current Architecture
+```
+src/aditi/
+├── __init__.py
+├── cli.py                 # Main CLI interface
+├── config.py              # Configuration management
+├── commands/
+│   ├── init.py           # Vale initialization
+│   ├── check.py          # Rule checking
+│   ├── fix.py            # Auto-fixing
+│   └── journey.py        # Interactive workflow
+├── rules/
+│   ├── base.py           # Base rule classes
+│   ├── registry.py       # Rule discovery
+│   └── ...               # Individual rule implementations
+├── vale_container.py      # Container management
+└── processor.py          # Rule processing engine
+
+tests/
+├── unit/                 # Unit tests
+└── integration/          # Integration tests
+
+docs/
+├── _posts/              # Blog posts
+└── _design/             # Design documents
+```"""
+    
+    def _extract_commands(self) -> Dict[str, List[Tuple[str, str]]]:
+        """Extract common commands from documentation and code."""
+        # This would scan README, docs, and code for command examples
+        # For now, return standard commands
+        return {
+            'Development': [
+                ('Install dependencies', 'pip install -e ".[dev]"'),
+                ('Run tests', 'pytest'),
+                ('Type checking', 'mypy src/'),
+                ('Format code', 'black src/ tests/'),
+                ('Lint code', 'ruff check src/ tests/')
+            ],
+            'Usage': [
+                ('Initialize Vale', 'aditi init'),
+                ('Check files', 'aditi check'),
+                ('Start journey', 'aditi journey'),
+                ('Fix issues', 'aditi fix --rule EntityReference')
+            ]
+        }
+    
+    def _format_commands(self, commands: Dict[str, List[Tuple[str, str]]]) -> str:
+        """Format commands for display."""
+        lines = []
+        
+        for section, cmd_list in commands.items():
+            lines.append(f"### {section}")
+            for desc, cmd in cmd_list:
+                lines.append(f"- **{desc}**: `{cmd}`")
+            lines.append("")
+        
+        return '\n'.join(lines).strip()
+    
+    def _show_diff(self, original: str, updated: str) -> None:
+        """Show a diff between original and updated content."""
+        import difflib
+        
+        diff = difflib.unified_diff(
+            original.splitlines(keepends=True),
+            updated.splitlines(keepends=True),
+            fromfile='CLAUDE.md (original)',
+            tofile='CLAUDE.md (updated)',
+            n=3
+        )
+        
+        print("\n📝 Changes that would be made:")
+        print(''.join(diff))
 
 
 def main():
-    """Main entry point for the CLAUDE.md updater."""
+    """Main entry point."""
     import argparse
     
-    parser = argparse.ArgumentParser(description="Update CLAUDE.md from template with current project state")
-    parser.add_argument('--force', action='store_true', help='Force update even if no changes detected')
-    parser.add_argument('--dry-run', action='store_true', help='Show what would be updated without making changes')
-    parser.add_argument('--section', choices=['deps', 'arch', 'commands', 'completed', 'recent'], 
-                       help='Update only a specific section')
-    
+    parser = argparse.ArgumentParser(description='Update CLAUDE.md with project information')
+    parser.add_argument('--dry-run', action='store_true', help='Show what would be changed without saving')
+    parser.add_argument('--check', action='store_true', help='Check if updates are needed (exit 1 if changes needed)')
     args = parser.parse_args()
     
-    updater = ClaudeMdUpdater()
+    updater = ImprovedClaudeMdUpdater()
     
-    if args.dry_run:
-        print("🔍 Dry run mode - showing what would be updated:")
-        # Implementation for dry run
-        return
-    
-    try:
-        updated = updater.update_all_sections(force=args.force)
-        if updated:
-            print("📝 CLAUDE.md has been updated with current project state")
+    if args.check:
+        # Check mode - see if updates needed
+        original = updater.claude_md.read_text()
+        # Do a dry run update
+        import tempfile
+        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
+            tmp.write(original)
+            tmp_path = tmp.name
+        
+        # Temporarily swap paths
+        updater.claude_md = Path(tmp_path)
+        success = updater.update_all_sections()
+        updated = Path(tmp_path).read_text()
+        
+        # Cleanup
+        Path(tmp_path).unlink()
+        
+        if original != updated:
+            print("❌ CLAUDE.md needs updates")
+            sys.exit(1)
         else:
-            print("✨ CLAUDE.md is already current")
-            
-    except Exception as e:
-        print(f"❌ Error updating CLAUDE.md: {e}")
-        return 1
-    
-    return 0
+            print("✅ CLAUDE.md is up to date")
+            sys.exit(0)
+    else:
+        success = updater.update_all_sections(dry_run=args.dry_run)
+        sys.exit(0 if success else 1)
 
 
 if __name__ == '__main__':
-    exit(main())
+    main()

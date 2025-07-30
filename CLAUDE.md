@@ -17,11 +17,15 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 - GitHub CLI (`gh`) if GitHub support is needed
 
 <!-- AUTO-GENERATED:DEPENDENCIES -->
-- **Core Dependencies**: Typer CLI framework with type hints, Rich console output and progress indicators, Pydantic data validation and settings management, Interactive prompts and user input, Vale linter via Podman/Docker containers
-- **Development Tools**: YAML parsing for configuration, Static type checking, Fast Python linter and formatter, Git pre-commit hooks
-- **Testing Framework**: pytest testing framework, pytest coverage reporting, pytest mocking utilities
-- **Documentation**: Jekyll with Just the Docs theme
-- **CI/CD**: GitHub Actions for automated workflows
+### Core Dependencies
+- **CLI Framework**: typer[all]>=0.9.0
+- **Data Validation**: pydantic>=2.5.0, pydantic-settings>=2.1.0
+- **Other**: rich>=13.7.0, questionary>=2.0.0
+
+### Development Dependencies
+- **Testing**: pytest>=7.4.0, pytest-cov>=4.1.0, pytest-mock>=3.12.0
+- **Code Quality**: mypy>=1.8.0, ruff>=0.1.9, black>=23.12.0
+- **Other**: pyyaml>=6.0.0, pre-commit>=3.6.0
 <!-- /AUTO-GENERATED:DEPENDENCIES -->
 
 ## Architecture
@@ -43,22 +47,18 @@ Aditi is designed as an MVP focused on helping technical writers prepare AsciiDo
 Rules are grouped by dependencies - ContentType must run before rules that depend on content type identification (TaskSection, TaskExample, etc.).
 
 <!-- AUTO-GENERATED:COMMANDS -->
-## Common Commands
-
-### Blog Post Management
-- **Validate blog posts**: `python tests/test_blog_post_validation.py`
-- **Run specific validation tests**: `python -m pytest tests/test_blog_post_validation.py -v`
-
-### GitHub Pages Development
-- **Local development**: `cd docs && bundle exec jekyll serve`
-- **Validation URL**: `http://localhost:4000/aditi/`
-
-### Python Development
+### Development
 - **Install dependencies**: `pip install -e ".[dev]"`
 - **Run tests**: `pytest`
 - **Type checking**: `mypy src/`
-- **Code formatting**: `black src/ tests/`
-- **Linting**: `ruff check src/ tests/`
+- **Format code**: `black src/ tests/`
+- **Lint code**: `ruff check src/ tests/`
+
+### Usage
+- **Initialize Vale**: `aditi init`
+- **Check files**: `aditi check`
+- **Start journey**: `aditi journey`
+- **Fix issues**: `aditi fix --rule EntityReference`
 <!-- /AUTO-GENERATED:COMMANDS -->
 
 ## Important Rules
@@ -137,157 +137,28 @@ User configuration stored in `~/aditi-data/config.json`:
 ### Current Architecture
 ```
 src/aditi/
-│   ├── __init__.py  # Package initialization
-│   ├── __main__.py
-│   ├── cli.py  # Main CLI interface
-│   ├── cli_prototype.py
-│   ├── commands/
-│   │   ├── __init__.py  # Package initialization
-│   │   ├── check.py
-│   │   ├── fix.py
-│   │   ├── init.py
-│   │   ├── journey.py
-│       └── vale.py
-│   ├── config.py  # Configuration management
-│   ├── git.py
-│   ├── processor.py
-│   ├── py.typed
-│   ├── rules/
-│   │   ├── __init__.py  # Package initialization
-│   │   ├── admonition_title.py
-│   │   ├── attribute_reference.py
-│   │   ├── author_line.py
-│   │   ├── base.py
-│   │   ├── block_title.py
-│   │   ├── conditional_code.py
-│   │   ├── content_type.py
-│   │   ├── cross_reference.py
-│   │   ├── discrete_heading.py
-│   │   ├── entity_reference.py
-│   │   ├── equation_formula.py
-│   │   ├── example_block.py
-│   │   ├── include_directive.py
-│   │   ├── line_break.py
-│   │   ├── link_attribute.py
-│   │   ├── nested_section.py
-│   │   ├── page_break.py
-│   │   ├── registry.py
-│   │   ├── related_links.py
-│   │   ├── short_description.py
-│   │   ├── sidebar_block.py
-│   │   ├── table_footer.py
-│   │   ├── tag_directive.py
-│   │   ├── task_duplicate.py
-│   │   ├── task_example.py
-│   │   ├── task_section.py
-│   │   ├── task_step.py
-│   │   ├── task_title.py
-│       └── thematic_break.py
-│   ├── scanner.py
-│   ├── vale/
-│       └── vale_config_template.ini
-│   ├── vale_container.py
-    └── vale_parser.py
+├── __init__.py
+├── cli.py                 # Main CLI interface
+├── config.py              # Configuration management
+├── commands/
+│   ├── init.py           # Vale initialization
+│   ├── check.py          # Rule checking
+│   ├── fix.py            # Auto-fixing
+│   └── journey.py        # Interactive workflow
+├── rules/
+│   ├── base.py           # Base rule classes
+│   ├── registry.py       # Rule discovery
+│   └── ...               # Individual rule implementations
+├── vale_container.py      # Container management
+└── processor.py          # Rule processing engine
+
 tests/
-│   ├── README.md  # Documentation
-│   ├── __init__.py  # Package initialization
-│   ├── conftest.py  # Shared test fixtures
-│   ├── integration/
-│   ├── __init__.py  # Package initialization
-│   ├── test_check_command.py  # Test module
-    └── test_cli_integration.py  # Test module
-│   ├── test_blog_post_validation.py  # Test module
-    └── unit/
-│   ├── __init__.py  # Package initialization
-│   ├── test_config.py  # Test module
-│   ├── test_fix_command.py  # Test module
-│   ├── test_git.py  # Test module
-│   ├── test_journey_command.py  # Test module
-│   ├── test_journey_workflow.py  # Test module
-│   ├── test_non_deterministic_rules.py  # Test module
-│   ├── test_processor.py  # Test module
-│   ├── test_rules.py  # Test module
-│   ├── test_vale_backup.py  # Test module
-    └── test_vale_parser.py  # Test module
+├── unit/                 # Unit tests
+└── integration/          # Integration tests
+
 docs/
-│   ├── CLAUDE-MD-AUTOMATION.md  # Documentation
-│   ├── Gemfile
-│   ├── QUICKSTART.md  # Documentation
-│   ├── Screenshot from 2025-07-29 09-49-16.png
-│   ├── Screenshot from 2025-07-29 09-50-12.png
-│   ├── Screenshot from 2025-07-29 09-51-01.png
-│   ├── Screenshot from 2025-07-29 09-51-31.png
-│   ├── Screenshot from 2025-07-29 09-52-11.png
-│   ├── Screenshot from 2025-07-29 09-53-39.png
-│   ├── _config.yml  # Jekyll configuration
-│   ├── _data/
-    └── recent_commits.yml
-│   ├── _design/
-│   ├── aditi-claude-code-implementation.md  # Documentation
-│   ├── aditi-claude-code-todo-list.md  # Documentation
-│   ├── aditi-plan.md  # Documentation
-│   ├── container-setup-tasks.md  # Documentation
-│   ├── phase-1-next-steps.md  # Documentation
-│   ├── phase-2-completion-summary.md  # Documentation
-│   ├── phase-2-mockup-revised.md  # Documentation
-│   ├── phase-2-mockup.md  # Documentation
-│   ├── phase-2-next-steps.md  # Documentation
-    └── remaining-work-to-complete.txt
-│   ├── _posts/
-│   ├── 2025-07-27-0723-i-finally-speak-a-programming-language.md  # Documentation
-│   ├── 2025-07-27-0832-setting-up-github-pages.md  # Documentation
-│   ├── 2025-07-27-0845-minima-vs-just-the-docs.md  # Documentation
-│   ├── 2025-07-27-0848-organizing-blog-assets-with-claude.md  # Documentation
-│   ├── 2025-07-27-1811-implementing-phase-1-core-infrastructure.md  # Documentation
-│   ├── 2025-07-27-1811-implementing-vale-asciidocdita-container-integration.md  # Documentation
-│   ├── 2025-07-27-2035-removing-git-integration-from-aditi-cli-design.md  # Documentation
-│   ├── 2025-07-28-2030-running-vale-asciidocdita-directly-from-command-line.md  # Documentation
-│   ├── 2025-07-28-2111-complete-asciidocdita-rule-coverage-implemented.md  # Documentation
-│   ├── 2025-07-29-0607-fixing-jekyll-front-matter-standardization.md  # Documentation
-│   ├── 2025-07-29-0638-claude-md-hybrid-automation-system.md  # Documentation
-│   ├── 2025-07-29-0816-introducing-aditi-asciidoc-to-dita-migration-made-easy.md  # Documentation
-│   ├── 2025-07-29-0959-example-workflow.md  # Documentation
-│   ├── 2025-07-29-2021-improved-comment-flags-with-dynamic-vale-data.md  # Documentation
-│   ├── 2025-07-29-2104-fixing-comment-flag-insertion-bug.md  # Documentation
-│   ├── 2025-07-30-0528-implementing-journey-session-management.md  # Documentation
-    └── post-template.md  # Blog post template
-│   ├── _sass/
-│   ├── custom/
-│       └── custom.scss
-    └── just-the-docs-default.scss
-│   ├── about.md  # Documentation
-│   ├── assets/
-│   ├── css/
-    └── images/
-│       └── blog/
-│   ├── container-setup.md  # Documentation
-│   ├── design/
-│   ├── design.md  # Documentation
-│   ├── drafts/
-    └── workflow-feedback.md  # Documentation
-│   ├── examples/
-│   ├── README.md  # Documentation
-│   ├── clean-example.adoc
-│   ├── comprehensive-example.adoc
-    └── rule-examples/
-│   ├── inbox/
-│   ├── index.md  # Documentation
-│   ├── known-issues.md  # Documentation
-    └── publishing.md  # Documentation
-.github/workflows/
-│   ├── jekyll-gh-pages.yml  # GitHub Actions workflow
-│   ├── update-claude-md.yml  # GitHub Actions workflow
-│   ├── update-commits.yml  # GitHub Actions workflow
-    └── validate-blog-posts.yml  # GitHub Actions workflow
-scripts/
-│   ├── README.md  # Documentation
-│   ├── claude_md_updater.py
-│   ├── install-git-hooks.sh
-│   ├── manage-git-hooks.sh
-│   ├── new-blog-post.sh
-│   ├── publish-to-pypi.sh
-│   ├── test-package-install.sh
-    └── upload-to-pypi.sh
+├── _posts/              # Blog posts
+└── _design/             # Design documents
 ```
 <!-- /AUTO-GENERATED:ARCHITECTURE -->
 
@@ -378,21 +249,27 @@ A comprehensive test suite prevents Jekyll deployment failures:
 <!-- AUTO-GENERATED:RECENT -->
 ## Recent Development Focus (July 2025)
 
+### Statistics
+- Total commits: 126
+
 ### Latest Achievements
-- ✅ Enhance directory path validation and user feedback in configure_repository function
-- ✅ Enhance aditi with improved comment flags and vale integration
-- ✅ Implemented ation
-- ✅ Prepare aditi for pypi publication and fix test failures
-- ✅ Add blog post about jekyll front matter standardization
+- ✅ Implement robust claude.md updater with in-place updates.
+- ✅ Complete phase 3 journey session management implementation.
+- ✅ Add blockignores to vale configuration to prevent false positives for code and inline entities.
+- ✅ Update comment flag generation for rule violations to use dedicated method.
+- ✅ Enhance directory path validation and user feedback in configure_repository function.
 
-### Current Focus Areas
-- **CI/CD Automation**: Active development and improvements
-- **Feature Development**: Active development and improvements
-- **Bug Fixes**: Active development and improvements
+### Development Focus
+- **Ci/Cd**: 53 commits
+- **Features**: 18 commits
+- **Bug Fixes**: 14 commits
+- **Documentation**: 14 commits
+- **Testing**: 9 commits
 
-### Key Lessons Learned
-- Jekyll requires strict date formatting - template files need exclusion
-- Comprehensive validation prevents deployment failures
+### Most Active Files
+- `docs/_data/recent_commits.yml`: 53 changes
+- `CLAUDE.md`: 20 changes
+- `src/aditi/commands/journey.py`: 13 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
 # important-instruction-reminders
