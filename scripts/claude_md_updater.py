@@ -500,10 +500,11 @@ docs/
         
         # Check for trivial-only changes
         trivial_patterns = [
-            r'- Total commits: \d+',  # Commit count changes
-            r'- `.*`: \d+ changes',   # File change count updates
-            r'### Statistics',        # Statistics section updates
-            r'### Most Active Files', # Most active files updates
+            r'Total commits: \d+',     # Commit count changes
+            r'`.*`: \d+ changes',      # File change count updates
+            r'\*\*[^*]+\*\*: \d+ commits',  # Focus area counts (allows any chars between **)
+            r'### Statistics',         # Statistics section updates
+            r'### Most Active Files',  # Most active files updates
         ]
         
         significant_changes = []
@@ -512,6 +513,9 @@ docs/
             
             # Skip if this line matches trivial patterns
             is_trivial = any(re.search(pattern, line_content) for pattern in trivial_patterns)
+            
+            # Debug: uncomment to see what's being detected
+            # print(f"DEBUG: '{line_content}' -> trivial: {is_trivial}")
             
             if not is_trivial and line_content:  # Ignore empty lines
                 significant_changes.append(change_line)
