@@ -332,6 +332,8 @@ A comprehensive test suite prevents Jekyll deployment failures:
 
 ## Testing Guidelines
 
+<!-- Test comment to trigger hook evaluation -->
+
 ### Running Tests
 ```bash
 # Run all tests
