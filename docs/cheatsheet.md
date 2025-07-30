@@ -44,7 +44,7 @@ aditi init
 aditi journey
 
 # Resume an interrupted session
-aditi journey --resume
+aditi journey
 ```
 
 **Interactive workflow includes:**
@@ -123,7 +123,7 @@ aditi fix --rule ContentType
 
 ```bash
 # If migration was interrupted
-aditi journey --resume
+aditi journey
 
 # Check session status
 ls ~/aditi-data/sessions/
@@ -248,7 +248,7 @@ podman ps -a | grep vale      # or docker ps -a
 ```bash
 # Sessions are auto-saved every step
 # Resume with:
-aditi journey --resume
+aditi journey
 
 # Session files location:
 ls ~/aditi-data/sessions/

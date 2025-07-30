@@ -220,7 +220,6 @@
 
   7. User Experience Enhancements
 
-  - Add --resume flag to continue interrupted journeys
   - Implement undo/rollback functionality
   - Add configuration profiles for different documentation standards
   - Create a aditi lint command for CI/CD integration

@@ -50,6 +50,6 @@ Type "n"
 Enter
 Sleep 2s
 
-Type "# Journey paused - you can resume anytime with 'aditi journey --resume'"
+Type "# Journey paused - you can resume anytime with 'aditi journey'"
 Enter
 Sleep 2s

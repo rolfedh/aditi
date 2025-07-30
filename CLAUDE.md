@@ -148,7 +148,7 @@ Aditi maintains session state to provide continuity across command invocations, 
 1. Start a journey: `aditi journey`
 2. Session ID is generated and displayed
 3. Progress is saved after each step
-4. If interrupted, run `aditi journey --resume` to continue
+4. If interrupted, run `aditi journey` to continue
 5. Sessions expire after 7 days of inactivity
 
 ## Implementation Status
@@ -374,10 +374,10 @@ Example test structure:
 def test_entity_reference_rule():
     # Test basic replacement
     assert rule.fix("Use ->") == "Use &#8594;"
-    
+
     # Test multiple entities
     assert rule.fix("(R) and (TM)") == "&#174; and &#8482;"
-    
+
     # Test edge cases
     assert rule.fix("") == ""
 ```
@@ -428,7 +428,7 @@ Solution: Delete config file and re-run 'aditi journey'
 - Non-fatal errors allow processing to continue
 
 ### Recovery Procedures
-1. **Session recovery**: Use `aditi journey --resume`
+1. **Session recovery**: Use `aditi journey`
 2. **Config reset**: Delete `~/aditi-data/config.json`
 3. **Vale reset**: Run `aditi init --force`
 4. **Clean state**: Remove `~/aditi-data/` directory

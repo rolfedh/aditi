@@ -70,7 +70,7 @@ aditi init
 ### 🗺️ **Interactive Migration Workflow**
 ```bash
 aditi journey              # Start new migration
-aditi journey --resume     # Continue previous session
+aditi journey     # Continue previous session
 ```
 
 ### 📁 **Repository Configuration**
