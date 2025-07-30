@@ -101,12 +101,20 @@ class ImprovedClaudeMdUpdater:
             
             # Write back if changed and not dry run
             if content != original_content:
+                # Check if changes are significant
+                changes_significant = self._are_changes_significant(original_content, content)
+                
                 if dry_run:
-                    print("🔍 Dry run - changes would be made but not saved")
-                    self._show_diff(original_content, content)
-                else:
+                    if changes_significant:
+                        print("🔍 Dry run - significant changes would be made but not saved")
+                        self._show_diff(original_content, content)
+                    else:
+                        print("ℹ️  No significant changes detected, skipping CLAUDE.md update")
+                elif changes_significant:
                     self.claude_md.write_text(content, encoding='utf-8')
                     print("✅ CLAUDE.md updated successfully")
+                else:
+                    print("ℹ️  No significant changes detected, skipping CLAUDE.md update")
                 return True
             else:
                 print("✨ CLAUDE.md is already up to date")
@@ -472,6 +480,45 @@ docs/
         
         return '\n'.join(lines).strip()
     
+    def _are_changes_significant(self, original: str, updated: str) -> bool:
+        """Check if changes are significant enough to warrant a commit."""
+        import difflib
+        
+        # Get line-by-line diff
+        diff_lines = list(difflib.unified_diff(
+            original.splitlines(keepends=True),
+            updated.splitlines(keepends=True),
+            lineterm=''
+        ))
+        
+        # Count actual content changes (exclude diff headers)
+        content_changes = [line for line in diff_lines if line.startswith(('+', '-')) and not line.startswith(('+++', '---'))]
+        
+        # If no content changes, not significant
+        if not content_changes:
+            return False
+        
+        # Check for trivial-only changes
+        trivial_patterns = [
+            r'- Total commits: \d+',  # Commit count changes
+            r'- `.*`: \d+ changes',   # File change count updates
+            r'### Statistics',        # Statistics section updates
+            r'### Most Active Files', # Most active files updates
+        ]
+        
+        significant_changes = []
+        for change_line in content_changes:
+            line_content = change_line[1:].strip()  # Remove +/- prefix
+            
+            # Skip if this line matches trivial patterns
+            is_trivial = any(re.search(pattern, line_content) for pattern in trivial_patterns)
+            
+            if not is_trivial and line_content:  # Ignore empty lines
+                significant_changes.append(change_line)
+        
+        # Only significant if there are non-trivial changes
+        return len(significant_changes) > 0
+    
     def _show_diff(self, original: str, updated: str) -> None:
         """Show a diff between original and updated content."""
         import difflib
@@ -500,28 +547,41 @@ def main():
     updater = ImprovedClaudeMdUpdater()
     
     if args.check:
-        # Check mode - see if updates needed
-        original = updater.claude_md.read_text()
-        # Do a dry run update
+        # Check mode - create a backup, update, compare, then restore
         import tempfile
-        with tempfile.NamedTemporaryFile(mode='w', delete=False) as tmp:
-            tmp.write(original)
-            tmp_path = tmp.name
+        import shutil
         
-        # Temporarily swap paths
-        updater.claude_md = Path(tmp_path)
-        success = updater.update_all_sections()
-        updated = Path(tmp_path).read_text()
+        original_content = updater.claude_md.read_text(encoding='utf-8')
         
-        # Cleanup
-        Path(tmp_path).unlink()
+        # Create a backup
+        backup_path = updater.claude_md.with_suffix('.backup')
+        shutil.copy2(updater.claude_md, backup_path)
         
-        if original != updated:
-            print("❌ CLAUDE.md needs updates")
-            sys.exit(1)
-        else:
-            print("✅ CLAUDE.md is up to date")
-            sys.exit(0)
+        try:
+            # Run the actual update
+            success = updater.update_all_sections(dry_run=False)
+            
+            if success:
+                updated_content = updater.claude_md.read_text(encoding='utf-8')
+                
+                # Compare content and check if changes are significant
+                changes_significant = updater._are_changes_significant(original_content, updated_content)
+                
+                if changes_significant:
+                    print("❌ CLAUDE.md needs updates")
+                    exit_code = 1
+                else:
+                    print("✅ CLAUDE.md is up to date (only trivial changes)")
+                    exit_code = 0
+            else:
+                print("❌ Error checking CLAUDE.md status")
+                exit_code = 1
+                
+        finally:
+            # Always restore the original
+            shutil.move(backup_path, updater.claude_md)
+            
+        sys.exit(exit_code)
     else:
         success = updater.update_all_sections(dry_run=args.dry_run)
         sys.exit(0 if success else 1)
