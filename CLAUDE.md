@@ -271,6 +271,7 @@ docs/
     └── rule-examples/
 │   ├── inbox/
 │   ├── index.md  # Documentation
+│   ├── known-issues.md  # Documentation
     └── publishing.md  # Documentation
 .github/workflows/
 │   ├── jekyll-gh-pages.yml  # GitHub Actions workflow
