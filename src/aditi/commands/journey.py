@@ -169,20 +169,54 @@ def configure_repository() -> bool:
         )
         raise typer.Exit(1)
 
-    # Ask about customizing subdirectory access
-    customize = questionary.confirm(
-        "Customize subdirectory access?",
-        default=False
+    # Ask about path selection method
+    console.print("\n📂 Directory Selection")
+    path_choice = questionary.select(
+        "How would you like to specify directories to scan?",
+        choices=[
+            "Use auto-detected paths (scan for .adoc files)",
+            "Enter custom directory paths"
+        ]
     ).ask()
 
-    if customize:
-        selected_dirs = select_directories(current_dir)
-        if not selected_dirs:
-            console.print("[red]No directories selected. Exiting.[/red]")
-            return False
+    if path_choice == "Use auto-detected paths (scan for .adoc files)":
+        # Ask if they want to customize the auto-detected paths
+        customize = questionary.confirm(
+            "Would you like to review and customize the auto-detected paths?",
+            default=False
+        ).ask()
+        
+        if customize:
+            selected_dirs = select_directories(current_dir)
+            if not selected_dirs:
+                console.print("[red]No directories selected. Exiting.[/red]")
+                return False
+        else:
+            # Use all directories with .adoc files
+            selected_dirs = None
     else:
-        # Use all directories with .adoc files
-        selected_dirs = None
+        # Enter custom paths
+        custom_paths = []
+        console.print("\nEnter directory paths (relative to repository root).")
+        console.print("Press Enter with empty input when done.\n")
+        
+        while True:
+            path_str = questionary.text("Directory path:").ask()
+            if not path_str:
+                break
+                
+            path = Path(path_str)
+            if (current_dir / path).exists() and (current_dir / path).is_dir():
+                custom_paths.append(path)
+                console.print(f"  ✓ Added: {path}")
+            else:
+                console.print(f"  [red]✗ Invalid path: {path}[/red]")
+        
+        if not custom_paths:
+            console.print("[red]No valid paths entered. Exiting.[/red]")
+            return False
+            
+        selected_dirs = custom_paths
 
     # Save configuration
     save_configuration(current_dir, selected_dirs)
