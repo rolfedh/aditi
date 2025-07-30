@@ -378,35 +378,51 @@ def apply_rules_workflow() -> None:
     # Initialize processor
     processor = RuleProcessor(vale_container, config)
 
-    # First, run a full check to get all violations
-    console.print("\n🔍 Analyzing AsciiDoc files...\n")
-    with Progress(
-        SpinnerColumn(),
-        TextColumn("[progress.description]{task.description}"),
-        console=console
-    ) as progress:
-        task = progress.add_task("Running Vale analysis...", total=None)
-        result = processor.process_files(adoc_files, dry_run=True)
-        progress.stop()
-
-    # Group violations by rule
-    violations_by_rule = processor.vale_parser.group_by_rule(result.violations_found)
-
-    # Process each rule in order
+    # Process each rule in order with fresh Vale runs
     for rule_name, severity, description in RULE_PROCESSING_ORDER:
-        if rule_name not in violations_by_rule:
-            continue  # No violations for this rule
-
-        violations = violations_by_rule[rule_name]
-
-        # Get the rule instance
+        # Get the rule instance first to check if it's implemented
         rule = processor.rule_registry.get_rule(rule_name)
         if not rule:
             console.print(f"[yellow]Warning: Rule {rule_name} not implemented yet.[/yellow]")
             continue
 
+        # Run Vale for just this specific rule
+        console.print(f"\n🔍 Checking for {rule_name} violations...\n")
+        with Progress(
+            SpinnerColumn(),
+            TextColumn("[progress.description]{task.description}"),
+            console=console,
+            transient=True
+        ) as progress:
+            task = progress.add_task(f"Running Vale {rule_name} analysis...", total=None)
+            
+            # Convert paths to relative paths for Vale
+            relative_paths = []
+            for path in adoc_files:
+                try:
+                    relative_paths.append(str(path.relative_to(Path.cwd())))
+                except ValueError:
+                    relative_paths.append(str(path))
+            
+            # Run Vale with single rule
+            vale_output = processor.vale_container.run_vale_single_rule(
+                rule_name, 
+                relative_paths,
+                project_root=Path.cwd()
+            )
+            progress.stop()
+
+        # Parse the Vale output
+        violations = processor.vale_parser.parse_json_output(vale_output)
+        
+        # Filter to just this rule's violations (in case Vale returns others)
+        rule_violations = [v for v in violations if v.rule_name == rule_name]
+        
+        if not rule_violations:
+            continue  # No violations for this rule
+
         # Process this rule
-        if not process_single_rule(rule, violations, description, processor, config_manager):
+        if not process_single_rule(rule, rule_violations, description, processor, config_manager):
             # User chose to stop
             console.print("\n[yellow]Journey paused. You can resume later.[/yellow]")
             return

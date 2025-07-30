@@ -248,6 +248,7 @@ docs/
 │   ├── 2025-07-29-0816-introducing-aditi-asciidoc-to-dita-migration-made-easy.md  # Documentation
 │   ├── 2025-07-29-0959-example-workflow.md  # Documentation
 │   ├── 2025-07-29-2021-improved-comment-flags-with-dynamic-vale-data.md  # Documentation
+│   ├── 2025-07-29-2104-fixing-comment-flag-insertion-bug.md  # Documentation
     └── post-template.md  # Blog post template
 │   ├── _sass/
 │   ├── custom/

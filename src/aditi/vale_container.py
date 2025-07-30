@@ -320,6 +320,142 @@ class ValeContainer:
             logger.error(f"Vale command failed: {e.stderr}")
             raise
 
+    def create_single_rule_config(self, rule_name: str, project_root: Path) -> Path:
+        """Create a temporary Vale config that runs only a single rule.
+        
+        Args:
+            rule_name: Name of the rule to run (e.g., "ContentType")
+            project_root: Project root directory
+            
+        Returns:
+            Path to the temporary config file
+        """
+        import tempfile
+        
+        # Read the original config to get styles path
+        original_config = project_root / ".vale.ini"
+        if not original_config.exists():
+            raise FileNotFoundError(f"No .vale.ini found in {project_root}")
+            
+        # Parse original config to get StylesPath
+        config_content = original_config.read_text()
+        styles_path = None
+        for line in config_content.splitlines():
+            if line.strip().startswith("StylesPath"):
+                styles_path = line.split("=", 1)[1].strip()
+                break
+                
+        if not styles_path:
+            styles_path = ".vale/styles"  # Default
+            
+        # Resolve styles path to be relative from temp config location
+        # If styles path is relative, make it relative from project root
+        if not Path(styles_path).is_absolute():
+            # The temp config will be in .vale_temp/, so we need to go up one level
+            styles_path = f"../{styles_path}"
+            
+        # All AsciiDocDITA rules to disable
+        all_rules = [
+            "AdmonitionTitle", "AttributeReference", "AuthorLine", "BlockTitle",
+            "ConditionalCode", "ContentType", "CrossReference", "DiscreteHeading",
+            "EntityReference", "EquationFormula", "ExampleBlock", "IncludeDirective",
+            "LineBreak", "LinkAttribute", "NestedSection", "PageBreak",
+            "RelatedLinks", "ShortDescription", "SidebarBlock", "TableFooter",
+            "TagDirective", "TaskDuplicate", "TaskExample", "TaskSection",
+            "TaskStep", "TaskTitle", "ThematicBreak"
+        ]
+        
+        # Build rule settings
+        rule_settings = []
+        for r in all_rules:
+            if r == rule_name:
+                rule_settings.append(f"AsciiDocDITA.{r} = YES")
+            else:
+                rule_settings.append(f"AsciiDocDITA.{r} = NO")
+        
+        rules_config = "\n".join(rule_settings)
+        
+        # Create temp config content
+        temp_config_content = f"""
+# Temporary Vale config for single rule: {rule_name}
+StylesPath = {styles_path}
+MinAlertLevel = suggestion
+
+[*.adoc]
+BasedOnStyles = AsciiDocDITA
+
+# Configure rules individually
+{rules_config}
+"""
+        
+        # Create temp file in project root (so relative paths work)
+        temp_dir = project_root / ".vale_temp"
+        temp_dir.mkdir(exist_ok=True)
+        temp_config = temp_dir / f"vale_{rule_name}.ini"
+        temp_config.write_text(temp_config_content)
+        
+        logger.debug(f"Created temporary Vale config for rule {rule_name}: {temp_config}")
+        return temp_config
+
+    def run_vale_single_rule(self, rule_name: str, file_paths: List[str], project_root: Optional[Path] = None) -> str:
+        """Run Vale with only a single rule enabled.
+        
+        Args:
+            rule_name: Name of the rule to run (e.g., "ContentType")
+            file_paths: List of file paths to check
+            project_root: Project root directory. Defaults to current directory.
+            
+        Returns:
+            Vale JSON output as string
+        """
+        if project_root is None:
+            project_root = Path.cwd()
+            
+        # Create temporary config
+        temp_config = self.create_single_rule_config(rule_name, project_root)
+        
+        try:
+            # Build Vale command with custom config
+            cmd = [
+                self.runtime, "run", "--rm",
+                "--memory=512m",
+                "--cpus=2",
+                "--security-opt=no-new-privileges",
+                "-v", f"{project_root.absolute()}:/docs:ro",
+                "-w", "/docs",
+                self.VALE_IMAGE,
+                "--config", f".vale_temp/vale_{rule_name}.ini",  # Use temp config
+                "--output", "JSON"
+            ] + file_paths
+            
+            logger.debug(f"Running Vale for single rule {rule_name}: {' '.join(cmd)}")
+            
+            result = subprocess.run(
+                cmd,
+                check=False,
+                capture_output=True,
+                text=True,
+                cwd=project_root,
+                timeout=300
+            )
+            
+            if result.returncode not in [0, 1]:  # Vale returns 1 when violations found
+                logger.error(f"Vale stderr: {result.stderr}")
+                raise RuntimeError(f"Vale command failed: {result.stderr}")
+                
+            return result.stdout
+            
+        finally:
+            # Clean up temp config
+            if temp_config.exists():
+                temp_config.unlink()
+                logger.debug(f"Cleaned up temporary config: {temp_config}")
+            # Clean up temp dir if empty
+            temp_dir = project_root / ".vale_temp"
+            if temp_dir.exists() and not any(temp_dir.iterdir()):
+                temp_dir.rmdir()
+                logger.debug(f"Cleaned up temporary directory: {temp_dir}")
+    
     def run_vale_raw(self, args: list[str], project_root: Optional[Path] = None) -> str:
         """Run Vale with specified arguments and return raw output.
         

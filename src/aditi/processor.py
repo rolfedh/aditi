@@ -384,24 +384,36 @@ class RuleProcessor:
                     applied_fixes.append(fix)
                     
                 else:
-                    # Standard replacement at position
-                    lines = content.splitlines(keepends=True)
-                    line_idx = fix.violation.line - 1
-                    
-                    if 0 <= line_idx < len(lines):
-                        line = lines[line_idx]
-                        col = fix.violation.column - 1
+                    # Check if this is a comment flag that should be inserted above the line
+                    if fix.is_comment_flag:
+                        # Insert comment on the line above the violation
+                        lines = content.splitlines(keepends=True)
+                        line_idx = fix.violation.line - 1
                         
-                        # Find the match in the line
-                        match_start = line.find(fix.violation.original_text, col)
-                        if match_start >= 0:
-                            match_end = match_start + len(fix.violation.original_text)
-                            new_line = (line[:match_start] + 
-                                      fix.replacement_text + 
-                                      line[match_end:])
-                            lines[line_idx] = new_line
+                        if 0 <= line_idx < len(lines):
+                            # Insert the comment before the violation line
+                            lines.insert(line_idx, fix.replacement_text + '\n')
                             content = ''.join(lines)
                             applied_fixes.append(fix)
+                    else:
+                        # Standard replacement at position
+                        lines = content.splitlines(keepends=True)
+                        line_idx = fix.violation.line - 1
+                        
+                        if 0 <= line_idx < len(lines):
+                            line = lines[line_idx]
+                            col = fix.violation.column - 1
+                            
+                            # Find the match in the line
+                            match_start = line.find(fix.violation.original_text, col)
+                            if match_start >= 0:
+                                match_end = match_start + len(fix.violation.original_text)
+                                new_line = (line[:match_start] + 
+                                          fix.replacement_text + 
+                                          line[match_end:])
+                                lines[line_idx] = new_line
+                                content = ''.join(lines)
+                                applied_fixes.append(fix)
                             
             # Write the modified content if changes were made
             if content != original_content:
