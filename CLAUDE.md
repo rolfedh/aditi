@@ -308,26 +308,26 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (July 2025)
 
 ### Statistics
-- Total commits: 198
+- Total commits: 220
 
 ### Latest Achievements
+- ✅ Implement single-source versioning.
 - ✅ Add intermediate recheck step and fix accurate fix counting in journey workflow.
 - ✅ Add vale configuration and update asciidocdita styles for improved validation.
 - ✅ Reintroduce claude.md updater workflow with enhanced commit parsing.
 - ✅ Improve directory selection ui for better user experience.
-- ✅ Add demo script for getting started with aditi toolkit.
 
 ### Development Focus
-- **Ci/Cd**: 79 commits
-- **Features**: 22 commits
-- **Documentation**: 16 commits
-- **Bug Fixes**: 15 commits
-- **Testing**: 11 commits
+- **Ci/Cd**: 89 commits
+- **Features**: 23 commits
+- **Bug Fixes**: 18 commits
+- **Documentation**: 17 commits
+- **Testing**: 12 commits
 
 ### Most Active Files
-- `docs/_data/recent_commits.yml`: 76 changes
-- `CLAUDE.md`: 58 changes
-- `src/aditi/commands/journey.py`: 18 changes
+- `docs/_data/recent_commits.yml`: 85 changes
+- `CLAUDE.md`: 63 changes
+- `src/aditi/commands/journey.py`: 19 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
 ## Building and Publishing
