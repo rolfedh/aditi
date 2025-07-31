@@ -109,15 +109,25 @@ class TestRuleProcessingOrder:
 class TestJourneyCommand:
     """Test journey command integration points."""
     
+    @patch("aditi.commands.journey.ConfigManager")
+    @patch("questionary.confirm")
     @patch("aditi.commands.journey.apply_rules_workflow")
     @patch("aditi.commands.journey.configure_repository")
-    def test_journey_command_flow(self, mock_configure, mock_apply):
+    def test_journey_command_flow(self, mock_configure, mock_apply, mock_confirm, mock_cm_class):
         """Test basic journey command flow."""
         # Import here to avoid circular imports
         from aditi.commands.journey import journey_command
+        from aditi.config import SessionState
+        
+        # Mock config manager to return empty session
+        mock_cm = Mock()
+        mock_cm.load_session.return_value = SessionState()  # Empty session
+        mock_cm_class.return_value = mock_cm
         
         # Mock successful configuration
         mock_configure.return_value = True
+        # Mock ready confirmation
+        mock_confirm.return_value.ask.return_value = True
         
         # Run command
         journey_command()
@@ -126,10 +136,18 @@ class TestJourneyCommand:
         mock_configure.assert_called_once()
         mock_apply.assert_called_once()
     
+    @patch("aditi.commands.journey.ConfigManager")
+    @patch("questionary.confirm")
     @patch("aditi.commands.journey.configure_repository")
-    def test_journey_command_configuration_cancelled(self, mock_configure):
+    def test_journey_command_configuration_cancelled(self, mock_configure, mock_confirm, mock_cm_class):
         """Test journey command when configuration is cancelled."""
         from aditi.commands.journey import journey_command
+        from aditi.config import SessionState
+        
+        # Mock config manager to return empty session
+        mock_cm = Mock()
+        mock_cm.load_session.return_value = SessionState()  # Empty session
+        mock_cm_class.return_value = mock_cm
         
         # Mock cancelled configuration
         mock_configure.return_value = False
@@ -140,15 +158,25 @@ class TestJourneyCommand:
         # Verify workflow stops
         mock_configure.assert_called_once()
     
+    @patch("aditi.commands.journey.ConfigManager")
+    @patch("questionary.confirm")
     @patch("aditi.commands.journey.complete_journey")
     @patch("aditi.commands.journey.apply_rules_workflow")
     @patch("aditi.commands.journey.configure_repository")
-    def test_journey_command_complete(self, mock_configure, mock_apply, mock_complete):
+    def test_journey_command_complete(self, mock_configure, mock_apply, mock_complete, mock_confirm, mock_cm_class):
         """Test complete journey command execution."""
         from aditi.commands.journey import journey_command
+        from aditi.config import SessionState
+        
+        # Mock config manager to return empty session
+        mock_cm = Mock()
+        mock_cm.load_session.return_value = SessionState()  # Empty session
+        mock_cm_class.return_value = mock_cm
         
         # Mock successful flow
         mock_configure.return_value = True
+        # Mock ready confirmation
+        mock_confirm.return_value.ask.return_value = True
         
         # Run command
         journey_command()

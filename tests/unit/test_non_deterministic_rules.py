@@ -265,13 +265,14 @@ class TestShortDescriptionRule:
             column=1,
             message="DITA topics require a short description element",
             severity=Severity.SUGGESTION,
-            original_text="= Title"
+            original_text="= Title",
+            check="AsciiDocDITA.ShortDescription"
         )
         
         fix = rule.generate_fix(violation, "dummy content")
         
         assert fix is not None
-        assert fix.replacement_text == "// AsciiDocDITA DITA topics require a short description element"
+        assert fix.replacement_text == "// AsciiDocDITA.ShortDescription, suggestion, DITA topics require a short description element"
         assert fix.confidence == 1.0
         assert fix.requires_review is True
         assert fix.description == "Flag for manual review"
@@ -318,13 +319,14 @@ class TestTaskStepRule:
             column=1,
             message="Task steps should contain simple instructions",
             severity=Severity.SUGGESTION,
-            original_text=". Complex step with multiple parts"
+            original_text=". Complex step with multiple parts",
+            check="AsciiDocDITA.TaskStep"
         )
         
         fix = rule.generate_fix(violation, "dummy content")
         
         assert fix is not None
-        assert fix.replacement_text == "// AsciiDocDITA Task steps should contain simple instructions"
+        assert fix.replacement_text == "// AsciiDocDITA.TaskStep, suggestion, Task steps should contain simple instructions"
         assert fix.confidence == 1.0
         assert fix.requires_review is True
         assert fix.description == "Flag for manual review"
@@ -371,13 +373,14 @@ class TestTaskTitleRule:
             column=1,
             message="Task titles should use imperative verbs",
             severity=Severity.SUGGESTION,
-            original_text="= Installing Software"
+            original_text="= Installing Software",
+            check="AsciiDocDITA.TaskTitle"
         )
         
         fix = rule.generate_fix(violation, "dummy content")
         
         assert fix is not None
-        assert fix.replacement_text == "// AsciiDocDITA Task titles should use imperative verbs"
+        assert fix.replacement_text == "// AsciiDocDITA.TaskTitle, suggestion, Task titles should use imperative verbs"
         assert fix.confidence == 1.0
         assert fix.requires_review is True
         assert fix.description == "Flag for manual review"
@@ -424,13 +427,14 @@ class TestTaskDuplicateRule:
             column=1,
             message="Task topics should avoid duplicate content",
             severity=Severity.SUGGESTION,
-            original_text=". Repeated step"
+            original_text=". Repeated step",
+            check="AsciiDocDITA.TaskDuplicate"
         )
         
         fix = rule.generate_fix(violation, "dummy content")
         
         assert fix is not None
-        assert fix.replacement_text == "// AsciiDocDITA Task topics should avoid duplicate content"
+        assert fix.replacement_text == "// AsciiDocDITA.TaskDuplicate, suggestion, Task topics should avoid duplicate content"
         assert fix.confidence == 1.0
         assert fix.requires_review is True
         assert fix.description == "Flag for manual review"
