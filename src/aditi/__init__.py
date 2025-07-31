@@ -4,7 +4,7 @@ A CLI tool to prepare AsciiDoc files for migration to DITA by identifying
 and fixing compatibility issues using Vale with AsciiDocDITA rules.
 """
 
-__version__ = "0.1.4"
+__version__ = "0.1.5"
 __author__ = "Your Name"
 __email__ = "your.email@example.com"
 __license__ = "MIT"
