@@ -507,18 +507,9 @@ def configure_repository() -> bool:
         console.print("\nPress Enter with empty input when done.\n")
         
         while True:
-            # Create autocomplete function
-            def path_completer(text):
-                if text:
-                    return get_path_suggestions(current_dir, text)
-                return []
-            
-            path_str = questionary.autocomplete(
-                "Directory path:",
-                choices=path_completer,
-                meta_information={
-                    "": "Start typing to see suggestions..."
-                }
+            # Simple text input without autocomplete
+            path_str = questionary.text(
+                "Directory path:"
             ).ask()
             
             if not path_str:
@@ -934,7 +925,7 @@ def process_single_rule(rule, issues, description, processor, config_manager) ->
     # Show completion message
     show_completion_message(rule, len(files_affected))
 
-    return continue_prompt()
+    return recheck_and_continue_prompt(rule.name, files_affected, processor)
 
 
 def apply_auto_fixes(rule, issues, processor, files_affected):
@@ -1034,6 +1025,84 @@ def show_completion_message(rule, file_count):
         "For more information, see [link=https://docs.google.com/presentation/d/1TaFY_qIL_-hYzKUXIps-CfXDI8SxrGvRXR8wuzdJ2Rk/edit?usp=sharing]Preparing Modules and Assemblies for DITA[/link]",
         border_style="blue"
     ))
+
+
+def recheck_rule_violations(rule_name: str, files_affected: List[Path], processor) -> None:
+    """Recheck for violations of a specific rule after fixes were applied.
+    
+    Args:
+        rule_name: Name of the rule to check
+        files_affected: List of files that were processed
+        processor: RuleProcessor instance
+    """
+    console.print(f"\n🔍 [bold]Rechecking {rule_name} violations...[/bold]")
+    
+    try:
+        # Convert paths to relative paths for Vale
+        relative_paths = []
+        for path in files_affected:
+            try:
+                relative_paths.append(str(path.relative_to(Path.cwd())))
+            except ValueError:
+                relative_paths.append(str(path))
+        
+        # Run Vale with single rule
+        vale_output = processor.vale_container.run_vale_single_rule(
+            rule_name, 
+            relative_paths,
+            project_root=Path.cwd()
+        )
+        
+        # Parse the Vale output
+        violations = processor.vale_parser.parse_json_output(vale_output)
+        
+        # Filter to just this rule's issues
+        rule_issues = [v for v in violations if v.rule_name == rule_name]
+        
+        if not rule_issues:
+            console.print("✅ [green]No remaining issues found for this rule![/green]")
+        else:
+            console.print(f"⚠️  [yellow]{len(rule_issues)} issue(s) still remain for this rule:[/yellow]\n")
+            
+            # Show affected files in the same format as process_single_rule
+            files_with_issues = list(set(v.file_path for v in rule_issues))
+            console.print("These files have this issue:")
+            for file_path in files_with_issues:
+                console.print(f"  • {file_path}")
+                
+    except Exception as e:
+        console.print(f"[red]Error during recheck: {e}[/red]")
+
+
+def recheck_and_continue_prompt(rule_name: str, files_affected: List[Path], processor) -> bool:
+    """Ask user to recheck violations and continue with next rule.
+    
+    Args:
+        rule_name: Name of the rule that was processed
+        files_affected: List of files that were processed  
+        processor: RuleProcessor instance
+        
+    Returns:
+        True to continue, False to stop
+    """
+    console.print()
+    
+    # Ask if user wants to recheck for issues
+    recheck = questionary.confirm(
+        "Recheck for issues before continuing to next rule?",
+        default=True
+    ).ask()
+    
+    if recheck:
+        recheck_rule_violations(rule_name, files_affected, processor)
+    
+    # Ask if user wants to continue
+    console.print()
+    cont = questionary.confirm(
+        "Continue with next rule?",
+        default=True
+    ).ask()
+    return cont if cont is not None else False
 
 
 def continue_prompt() -> bool:
