@@ -823,7 +823,12 @@ def apply_rules_workflow() -> bool:
         rule_violations = [v for v in violations if v.rule_name == rule_name]
         
         if not rule_violations:
-            continue  # No issues for this rule
+            # No issues for this rule - show success message and mark as completed
+            console.print(f"✅ [green]No {rule_name} violations found - this rule is already satisfied![/green]\n")
+            # Update session to mark this rule as applied
+            session.applied_rules.append(rule_name)
+            config_manager.save_session(session)
+            continue  # Move to next rule
 
         # Process this rule
         if not process_single_rule(rule, rule_violations, description, processor, config_manager):
