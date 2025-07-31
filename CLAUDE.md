@@ -332,12 +332,37 @@ A comprehensive test suite prevents Jekyll deployment failures:
 
 ## Building and Publishing
 
+### Prerequisites for Publishing
+**CRITICAL**: Ensure these tools are available before releasing:
+```bash
+# Check if required tools are installed
+python -m pip list | grep -E "(build|twine|wheel)"
+
+# If missing, install via pipx (recommended for system-wide tools)
+pipx install twine
+pipx install build
+
+# Or ensure requirements-publish.txt includes:
+# build>=1.0.0
+# twine>=4.0.0
+# wheel>=0.40.0
+```
+
+### Pre-Release Checklist
+**IMPORTANT**: Complete these checks before starting the release:
+1. [ ] All tests pass: `pytest --ignore=tests/test_claude_md_updater.py`
+2. [ ] No import errors: `python -c "import aditi; print(aditi.__version__)"`
+3. [ ] Clean working directory: `git status` shows no uncommitted changes
+4. [ ] On main branch: `git branch --show-current` shows `main`
+5. [ ] Up to date with remote: `git pull origin main`
+
 ### PyPI Release Process
 
 #### 1. Version Management
-**CRITICAL**: Version must be updated in TWO places:
+**CRITICAL**: Version must be updated in THREE places:
 - `pyproject.toml`: Update the `version` field
-- `src/aditi/__init__.py`: Update the `__version__` variable
+- `src/aditi/__init__.py`: Update the `__version__` variable  
+- `tests/integration/test_cli_integration.py`: Update version assertion
 
 ```bash
 # Example: Bumping to version 0.1.5
@@ -346,12 +371,21 @@ version = "0.1.5"
 
 # Edit src/aditi/__init__.py
 __version__ = "0.1.5"
+
+# Edit tests/integration/test_cli_integration.py
+assert "aditi version 0.1.5" in result.stdout
+```
+
+**TIP**: To verify all versions match:
+```bash
+# Check version consistency
+grep -n "0\.1\.[0-9]" pyproject.toml src/aditi/__init__.py tests/integration/test_cli_integration.py
 ```
 
 #### 2. Build the Package
 ```bash
-# Clean previous builds
-rm -rf dist/ build/ *.egg-info
+# Clean previous builds - IMPORTANT!
+rm -rf dist/ build/ *.egg-info src/*.egg-info
 
 # Build source distribution and wheel
 python -m build
@@ -365,34 +399,60 @@ ls -la dist/
 ```bash
 # Upload to TestPyPI
 python -m twine upload --repository testpypi dist/*
+# Or with pipx: pipx run twine upload --repository testpypi dist/*
 
-# Test installation
+# Test installation in a clean environment
+python -m venv test-env
+source test-env/bin/activate  # On Windows: test-env\Scripts\activate
 pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ aditi
+aditi --version  # Verify it works
+deactivate
+rm -rf test-env
 ```
 
 #### 4. Upload to PyPI
 ```bash
 # Upload to PyPI (requires PyPI API token)
 python -m twine upload dist/*
+# Or with pipx: pipx run twine upload dist/*
 
 # Verify installation
 pip install --upgrade aditi
 ```
 
+**Note**: If you encounter "externally-managed-environment" errors, use `pipx run twine` instead of installing twine directly.
+
 ### GitHub Release Process
 
-#### 1. Create and Push Version Tag
+#### 1. Commit and Push Changes
 ```bash
-# Create annotated tag
+# Stage version changes
+git add pyproject.toml src/aditi/__init__.py tests/integration/test_cli_integration.py
+
+# Commit with semantic version message
+git commit -m "chore: Bump version to 0.1.5 in pyproject.toml and __init__.py"
+
+# Push to main (handle any conflicts with pull --rebase if needed)
+git push origin main
+```
+
+#### 2. Create and Push Version Tag
+```bash
+# Create annotated tag AFTER pushing the commit
 git tag -a v0.1.5 -m "Release version 0.1.5"
 
 # Push tag to GitHub
 git push origin v0.1.5
 ```
 
-#### 2. Create GitHub Release with gh CLI
+#### 3. Create GitHub Release with gh CLI
 ```bash
-# Create release with changelog
+# Create release with auto-generated notes (recommended)
+gh release create v0.1.5 \
+  --title "v0.1.5" \
+  --generate-notes
+
+# Or create with custom changelog
 gh release create v0.1.5 \
   --title "v0.1.5" \
   --notes "## What's Changed
@@ -406,41 +466,47 @@ gh release create v0.1.5 \
 gh release upload v0.1.5 dist/*
 ```
 
-#### 3. Alternative: Draft Release for Review
+#### 4. Alternative: Draft Release for Review
 ```bash
-# Create draft release
+# Create draft release for team review
 gh release create v0.1.5 --draft \
   --title "v0.1.5" \
   --generate-notes
 
+# Review at: https://github.com/rolfedh/aditi/releases
 # Edit and publish when ready
 gh release edit v0.1.5 --draft=false
 ```
 
 ### Complete Release Checklist
-1. [ ] Update version in `pyproject.toml`
-2. [ ] Update version in `src/aditi/__init__.py`
-3. [ ] Run tests: `pytest`
-4. [ ] Build package: `python -m build`
-5. [ ] (Optional) Test on TestPyPI
-6. [ ] Upload to PyPI: `python -m twine upload dist/*`
-7. [ ] Commit version changes
-8. [ ] Create and push git tag
-9. [ ] Create GitHub release with `gh`
-10. [ ] Verify PyPI installation works
+1. [ ] Run pre-release checks (see Pre-Release Checklist above)
+2. [ ] Update version in `pyproject.toml`
+3. [ ] Update version in `src/aditi/__init__.py`
+4. [ ] Update version in `tests/integration/test_cli_integration.py`
+5. [ ] Verify versions match: `grep -n "0\.1\.[0-9]" pyproject.toml src/aditi/__init__.py tests/integration/test_cli_integration.py`
+6. [ ] Run tests: `pytest --ignore=tests/test_claude_md_updater.py`
+7. [ ] Clean and build package: `rm -rf dist/ && python -m build`
+8. [ ] (Optional) Test on TestPyPI with clean venv
+9. [ ] Upload to PyPI: `pipx run twine upload dist/*`
+10. [ ] Commit and push version changes
+11. [ ] Create and push git tag
+12. [ ] Create GitHub release with `gh release create`
+13. [ ] Verify PyPI installation: `pip install --upgrade aditi && aditi --version`
 
 ### Common Issues and Solutions
 
 #### Version Mismatch
 ```
-Error: Version mismatch between pyproject.toml and __init__.py
-Solution: Ensure both files have identical version strings
+Error: Tests fail with version assertion error
+Solution: Update version in tests/integration/test_cli_integration.py
+Check: grep -n "version" tests/integration/test_cli_integration.py
 ```
 
 #### Build Artifacts from Previous Versions
 ```
 Error: Uploading wrong version to PyPI
-Solution: Always clean dist/ before building: rm -rf dist/
+Solution: Always clean ALL build directories:
+rm -rf dist/ build/ *.egg-info src/*.egg-info
 ```
 
 #### Missing PyPI Token
@@ -449,6 +515,66 @@ Error: Authentication failed
 Solution: Configure ~/.pypirc or use environment variable:
 export TWINE_USERNAME=__token__
 export TWINE_PASSWORD=pypi-your-token-here
+```
+
+#### Externally Managed Environment
+```
+Error: Cannot install twine due to externally-managed-environment
+Solution: Use pipx instead of pip:
+pipx run twine upload dist/*
+```
+
+#### Git Push Conflicts
+```
+Error: Updates were rejected because the tip of your current branch is behind
+Solution: Pull with rebase before pushing:
+git pull --rebase origin main
+git push origin main
+```
+
+#### Broken Tests
+```
+Error: ModuleNotFoundError in tests
+Solution: Exclude broken tests temporarily:
+pytest --ignore=tests/test_claude_md_updater.py
+TODO: Fix or remove the broken test file
+```
+
+### Future Release Automation Improvements
+
+**Recommended Enhancements:**
+1. **Version Sync Script**: Create a script to update all version references automatically
+2. **Pre-release Validation**: GitHub Action to run all checks before release
+3. **Release Script**: Automate the entire release process with proper error handling
+4. **Post-release Tasks**: Auto-create next version branch, update CHANGELOG template
+
+**Example Version Update Script** (`scripts/update-version.py`):
+```python
+#!/usr/bin/env python3
+import re
+import sys
+
+def update_version(old_version, new_version):
+    files = [
+        ('pyproject.toml', f'version = "{old_version}"', f'version = "{new_version}"'),
+        ('src/aditi/__init__.py', f'__version__ = "{old_version}"', f'__version__ = "{new_version}"'),
+        ('tests/integration/test_cli_integration.py', f'aditi version {old_version}', f'aditi version {new_version}')
+    ]
+    
+    for filepath, old_text, new_text in files:
+        with open(filepath, 'r') as f:
+            content = f.read()
+        content = content.replace(old_text, new_text)
+        with open(filepath, 'w') as f:
+            f.write(content)
+    
+    print(f"Updated version from {old_version} to {new_version}")
+
+if __name__ == "__main__":
+    if len(sys.argv) != 3:
+        print("Usage: python update-version.py OLD_VERSION NEW_VERSION")
+        sys.exit(1)
+    update_version(sys.argv[1], sys.argv[2])
 ```
 
 ## Testing Guidelines
