@@ -18,7 +18,7 @@ Aditi is a complete reboot of asciidoc-dita-toolkit, designed as a CLI tool to p
 
 <!-- AUTO-GENERATED:DEPENDENCIES -->
 ### Core Dependencies
-- **CLI Framework**: typer[all]>=0.9.0
+- **CLI Framework**: typer>=0.9.0
 - **Data Validation**: pydantic>=2.5.0, pydantic-settings>=2.1.0
 - **Other**: rich>=13.7.0, questionary>=2.0.0
 

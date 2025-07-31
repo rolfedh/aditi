@@ -25,6 +25,8 @@ Aditi helps technical writers identify and fix compatibility issues when migrati
 pip install --upgrade aditi
 ```
 
+> **Note**: If you encounter an installation error like `[Errno 20] Not a directory: '/home/user/.local/bin/typer'`, see the [troubleshooting guide](docs/QUICKSTART.md#installation-error-not-a-directory).
+
 ### System Requirements
 
 - **Python**: 3.11 or later

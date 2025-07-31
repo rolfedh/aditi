@@ -28,7 +28,8 @@ classifiers = [
 ]
 keywords = ["asciidoc", "dita", "documentation", "migration", "vale", "linter"]
 dependencies = [
-    "typer[all]>=0.9.0",
+    # Note: Using 'typer' instead of 'typer[all]' to avoid conflicts with existing typer CLI installations
+    "typer>=0.9.0",
     "rich>=13.7.0",
     "pydantic>=2.5.0",
     "pydantic-settings>=2.1.0",

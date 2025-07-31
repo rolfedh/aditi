@@ -192,6 +192,30 @@ aditi check --verbose          # Review remaining issues
 
 ## Troubleshooting
 
+### Installation Error: "Not a directory"
+
+```bash
+ERROR: Could not install packages due to an OSError: [Errno 20] Not a directory: '/home/user/.local/bin/typer'
+```
+
+**Problem**: A file named `typer` already exists in your bin directory, preventing pip from installing the typer package.
+
+**Solutions**:
+1. Remove the conflicting file:
+   ```bash
+   rm ~/.local/bin/typer
+   ```
+
+2. Then reinstall aditi:
+   ```bash
+   pip install --upgrade aditi
+   ```
+
+3. Alternative: Use pipx for isolated installation:
+   ```bash
+   pipx install aditi
+   ```
+
 ### "No paths configured" Error
 
 ```bash
