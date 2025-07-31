@@ -942,21 +942,28 @@ def apply_auto_fixes(rule, issues, processor, files_affected):
 
         # Process each file
         fixes_applied = 0
+        file_fix_counts = {}  # Track actual fixes per file
         for file_path in files_affected:
             file_issues = [v for v in issues if v.file_path == file_path]
 
             # Apply fixes to this file for the specific rule only
             result = processor.process_files([file_path], dry_run=False, rule_filter=rule.name)
-            fixes_applied += len(result.fixes_applied)
+            file_fixes = len([f for f in result.fixes_applied if f.violation.file_path == file_path])
+            file_fix_counts[file_path] = file_fixes
+            fixes_applied += file_fixes
 
             progress.update(task, advance=1)
 
     # Show summary
-    console.print(f"\n✓ Applied {fixes_applied} {rule.name} fixes.")
-    for i, file_path in enumerate(files_affected[:5]):
-        rel_path = file_path.relative_to(Path.cwd())
-        file_fixes = len([v for v in issues if v.file_path == file_path])
-        console.print(f"  • {rel_path} ({file_fixes} {'fix' if file_fixes == 1 else 'fixes'})")
+    if fixes_applied > 0:
+        console.print(f"\n✓ Applied {fixes_applied} {rule.name} {'fix' if fixes_applied == 1 else 'fixes'}.")
+        for file_path, fix_count in file_fix_counts.items():
+            if fix_count > 0:
+                rel_path = file_path.relative_to(Path.cwd())
+                console.print(f"  • {rel_path} ({fix_count} {'fix' if fix_count == 1 else 'fixes'})")
+    else:
+        console.print(f"\n[yellow]No {rule.name} fixes could be applied automatically.[/yellow]")
+        console.print("[dim]Some violations may be in code blocks or require manual review.[/dim]")
     if len(files_affected) > 5:
         console.print(f"  • ...")
         console.print(f"  [show the full list of files]")
@@ -1022,7 +1029,8 @@ def show_completion_message(rule, file_count):
          if rule.name == "ContentType" else "") +
         "- Optional: Commit and push your changes to a pull request.\n"
         "- Ensure these changes are available in the current working branch before proceeding.\n\n"
-        "For more information, see [link=https://docs.google.com/presentation/d/1TaFY_qIL_-hYzKUXIps-CfXDI8SxrGvRXR8wuzdJ2Rk/edit?usp=sharing]Preparing Modules and Assemblies for DITA[/link]",
+        "For more information, see Preparing Modules and Assemblies for DITA:\n"
+        "https://docs.google.com/presentation/d/1TaFY_qIL_-hYzKUXIps-CfXDI8SxrGvRXR8wuzdJ2Rk/edit?usp=sharing",
         border_style="blue"
     ))
 
