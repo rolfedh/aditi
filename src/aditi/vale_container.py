@@ -403,6 +403,17 @@ BasedOnStyles = AsciiDocDITA
         temp_config = temp_dir / f"vale_{rule_name}.ini"
         temp_config.write_text(temp_config_content)
         
+        # Ensure file is flushed to disk before container runs
+        import os
+        try:
+            # Flush and sync the file to ensure it's visible to the container
+            with temp_config.open('r+b') as f:
+                f.flush()
+                os.fsync(f.fileno())
+        except (OSError, AttributeError):
+            # Fallback: just sync all pending filesystem operations
+            os.sync()
+        
         logger.debug(f"Created temporary Vale config for rule {rule_name}: {temp_config}")
         return temp_config
 
@@ -423,6 +434,13 @@ BasedOnStyles = AsciiDocDITA
         # Create temporary config
         temp_config = self.create_single_rule_config(rule_name, project_root)
         
+        # Verify the temp config file exists before running container
+        if not temp_config.exists():
+            raise FileNotFoundError(f"Failed to create temporary Vale config: {temp_config}")
+        
+        logger.debug(f"Verified temporary config exists: {temp_config}")
+        logger.debug(f"Temp config size: {temp_config.stat().st_size} bytes")
+        
         try:
             # Build Vale command with custom config
             cmd = [
@@ -438,6 +456,9 @@ BasedOnStyles = AsciiDocDITA
             ] + file_paths
             
             logger.debug(f"Running Vale for single rule {rule_name}: {' '.join(cmd)}")
+            logger.debug(f"Working directory: {project_root}")
+            logger.debug(f"Temp config path relative to project root: {temp_config.relative_to(project_root)}")
+            logger.debug(f"Container runtime: {self.runtime}")
             
             result = subprocess.run(
                 cmd,
@@ -450,6 +471,13 @@ BasedOnStyles = AsciiDocDITA
             
             if result.returncode not in [0, 1]:  # Vale returns 1 when violations found
                 logger.error(f"Vale stderr: {result.stderr}")
+                logger.error(f"Vale stdout: {result.stdout}")
+                logger.error(f"Vale return code: {result.returncode}")
+                # Additional debugging for file access issues
+                if "does not exist" in result.stderr:
+                    logger.error(f"Config file exists on host: {temp_config.exists()}")
+                    logger.error(f"Config file absolute path: {temp_config.absolute()}")
+                    logger.error(f"Project root absolute path: {project_root.absolute()}")
                 raise RuntimeError(f"Vale command failed: {result.stderr}")
                 
             return result.stdout
