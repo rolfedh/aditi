@@ -330,6 +330,127 @@ A comprehensive test suite prevents Jekyll deployment failures:
 - `src/aditi/commands/journey.py`: 18 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
+## Building and Publishing
+
+### PyPI Release Process
+
+#### 1. Version Management
+**CRITICAL**: Version must be updated in TWO places:
+- `pyproject.toml`: Update the `version` field
+- `src/aditi/__init__.py`: Update the `__version__` variable
+
+```bash
+# Example: Bumping to version 0.1.5
+# Edit pyproject.toml
+version = "0.1.5"
+
+# Edit src/aditi/__init__.py
+__version__ = "0.1.5"
+```
+
+#### 2. Build the Package
+```bash
+# Clean previous builds
+rm -rf dist/ build/ *.egg-info
+
+# Build source distribution and wheel
+python -m build
+
+# Verify the build
+ls -la dist/
+# Should show: aditi-0.1.5.tar.gz and aditi-0.1.5-py3-none-any.whl
+```
+
+#### 3. Test with TestPyPI (Optional but Recommended)
+```bash
+# Upload to TestPyPI
+python -m twine upload --repository testpypi dist/*
+
+# Test installation
+pip install --index-url https://test.pypi.org/simple/ --extra-index-url https://pypi.org/simple/ aditi
+```
+
+#### 4. Upload to PyPI
+```bash
+# Upload to PyPI (requires PyPI API token)
+python -m twine upload dist/*
+
+# Verify installation
+pip install --upgrade aditi
+```
+
+### GitHub Release Process
+
+#### 1. Create and Push Version Tag
+```bash
+# Create annotated tag
+git tag -a v0.1.5 -m "Release version 0.1.5"
+
+# Push tag to GitHub
+git push origin v0.1.5
+```
+
+#### 2. Create GitHub Release with gh CLI
+```bash
+# Create release with changelog
+gh release create v0.1.5 \
+  --title "v0.1.5" \
+  --notes "## What's Changed
+- Feature: Add new functionality
+- Fix: Resolve issue with X
+- Docs: Update documentation
+
+**Full Changelog**: https://github.com/rolfedh/aditi/compare/v0.1.4...v0.1.5"
+
+# Upload built artifacts (optional)
+gh release upload v0.1.5 dist/*
+```
+
+#### 3. Alternative: Draft Release for Review
+```bash
+# Create draft release
+gh release create v0.1.5 --draft \
+  --title "v0.1.5" \
+  --generate-notes
+
+# Edit and publish when ready
+gh release edit v0.1.5 --draft=false
+```
+
+### Complete Release Checklist
+1. [ ] Update version in `pyproject.toml`
+2. [ ] Update version in `src/aditi/__init__.py`
+3. [ ] Run tests: `pytest`
+4. [ ] Build package: `python -m build`
+5. [ ] (Optional) Test on TestPyPI
+6. [ ] Upload to PyPI: `python -m twine upload dist/*`
+7. [ ] Commit version changes
+8. [ ] Create and push git tag
+9. [ ] Create GitHub release with `gh`
+10. [ ] Verify PyPI installation works
+
+### Common Issues and Solutions
+
+#### Version Mismatch
+```
+Error: Version mismatch between pyproject.toml and __init__.py
+Solution: Ensure both files have identical version strings
+```
+
+#### Build Artifacts from Previous Versions
+```
+Error: Uploading wrong version to PyPI
+Solution: Always clean dist/ before building: rm -rf dist/
+```
+
+#### Missing PyPI Token
+```
+Error: Authentication failed
+Solution: Configure ~/.pypirc or use environment variable:
+export TWINE_USERNAME=__token__
+export TWINE_PASSWORD=pypi-your-token-here
+```
+
 ## Testing Guidelines
 
 ### Running Tests
