@@ -6,6 +6,7 @@ It handles container lifecycle, mounting volumes, and processing Vale output.
 
 import json
 import logging
+import os
 import shutil
 import subprocess
 from datetime import datetime
@@ -105,6 +106,11 @@ class ValeContainer:
         template_path = Path(__file__).parent / "vale" / "vale_config_template.ini"
         shutil.copy(template_path, vale_ini)
         logger.info(f"Created Vale configuration at {vale_ini}")
+
+        # Create .vale/styles directory if it doesn't exist
+        styles_dir = project_root / ".vale" / "styles"
+        styles_dir.mkdir(parents=True, exist_ok=True)
+        logger.info(f"Created styles directory at {styles_dir}")
 
         # Run vale sync to download styles
         self._run_vale_sync(project_root)
@@ -222,8 +228,9 @@ class ValeContainer:
 
         cmd = [
             self.runtime, "run", "--rm",
-            "-v", f"{project_root}:/docs",
+            "-v", f"{project_root}:/docs:z",
             "-w", "/docs",
+            "--env", "HOME=/docs",
             self.VALE_IMAGE,
             "sync"
         ]
@@ -282,11 +289,13 @@ class ValeContainer:
         # Run Vale in container with resource limits and timeout
         cmd = [
             self.runtime, "run", "--rm",
+            "--user", f"{os.getuid()}:{os.getgid()}",
             "--memory=512m",      # Limit memory usage
             "--cpus=2",           # Limit CPU usage  
             "--security-opt=no-new-privileges",  # Security hardening
-            "-v", f"{abs_project_root}:/docs:ro",  # Read-only mount for security
+            "-v", f"{abs_project_root}:/docs:ro,z",  # Read-only mount with SELinux context
             "-w", "/docs",
+            "--env", "HOME=/docs",
             self.VALE_IMAGE,
             "--output", output_format,
             str(rel_target)
