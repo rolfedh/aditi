@@ -646,6 +646,96 @@ def test_entity_reference_rule():
 3. Run deterministic rules first for quick wins
 4. Use `--parallel` flag for multi-core processing (future feature)
 
+## Container Permissions and Best Practices
+
+### Overview
+When working with containerized tools like Vale, proper handling of file permissions and path resolution is critical. Two common issues can arise:
+
+1. **SELinux Context Issues**: Container cannot access mounted volumes due to missing security contexts
+2. **Path Resolution Issues**: Absolute paths on host don't resolve correctly inside container
+
+### Best Practices for Container File Access
+
+#### 1. Always Use SELinux Contexts on Volume Mounts
+```python
+# ❌ Incorrect - May fail with permission denied
+"-v", f"{project_root}:/docs"
+
+# ✅ Correct - Includes SELinux context
+"-v", f"{project_root}:/docs:z"  # :z allows container to access files
+```
+
+#### 2. Set Proper User ID Mapping
+```python
+# Add user ID mapping to ensure consistent file permissions
+"--user", f"{os.getuid()}:{os.getgid()}"
+```
+
+#### 3. Set HOME Environment for Tools That Need It
+```python
+# Some tools look for config in HOME directory
+"--env", "HOME=/docs"
+```
+
+#### 4. Convert Absolute Paths to Relative for Container
+```python
+# Convert host absolute paths to container-relative paths
+project_root = Path.cwd()
+path_args = []
+for p in file_paths:
+    try:
+        # Try to make path relative to project root
+        rel_path = p.relative_to(project_root)
+        path_args.append(str(rel_path))
+    except ValueError:
+        # If outside project root, use absolute
+        path_args.append(str(p))
+```
+
+#### 5. Ensure Files Are Flushed Before Container Access
+```python
+# When creating temporary files for container use
+temp_config.write_text(content)
+
+# Ensure file is flushed to disk
+with temp_config.open('r+b') as f:
+    f.flush()
+    os.fsync(f.fileno())
+```
+
+#### 6. Pre-create Required Directories
+```python
+# Create directories before container needs them
+styles_dir = project_root / ".vale" / "styles"
+styles_dir.mkdir(parents=True, exist_ok=True)
+```
+
+### Common Container Permission Errors and Solutions
+
+#### SELinux Permission Denied
+```
+Error: Permission denied when container tries to access files
+Solution: Add :z or :Z flag to volume mounts
+- :z = shared content label (multiple containers can access)
+- :Z = private unshared content label (single container access)
+```
+
+#### File Not Found in Container
+```
+Error: Container reports file doesn't exist (but it exists on host)
+Solution: 
+1. Use relative paths from mount point
+2. Ensure file is synced to disk before container runs
+3. Verify mount point includes the file's directory
+```
+
+#### Home Directory Access Issues
+```
+Error: Tool can't find config in home directory
+Solution: Set HOME environment variable to mounted directory
+--env "HOME=/docs"
+```
+
 ## Error Handling Guidelines
 
 ### Common Error Scenarios
