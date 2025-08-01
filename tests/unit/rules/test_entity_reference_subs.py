@@ -174,3 +174,26 @@ Use the `&nbsp;` entity in HTML."""
         violation2 = self.create_violation(5, 4, "&nbsp;")
         fix2 = rule.generate_fix(violation2, content)
         # This might incorrectly return a fix due to the outer block's settings
+    
+    def test_subs_plus_normal_fixes(self, rule):
+        """Test that subs='+normal' enables entity fixing."""
+        content = """[source,html,subs="+normal"]
+----
+<p>Copyright &copy; 2024</p>
+----"""
+        
+        violation = self.create_violation(3, 14, "&copy;")
+        fix = rule.generate_fix(violation, content)
+        assert fix is not None
+        assert fix.replacement_text == "{copy}"
+    
+    def test_subs_minus_replacements_no_fix(self, rule):
+        """Test that subs='normal,-replacements' disables entity fixing."""
+        content = """[source,html,subs="normal,-replacements"]
+----
+<p>Copyright &copy; 2024</p>
+----"""
+        
+        violation = self.create_violation(3, 14, "&copy;")
+        fix = rule.generate_fix(violation, content)
+        assert fix is None  # -replacements should disable entity fixing

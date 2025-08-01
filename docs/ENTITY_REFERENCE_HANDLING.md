@@ -57,7 +57,23 @@ When the `subs` attribute includes `replacements`, entities **ARE** converted:
    ----
    ```
 
-4. **`subs="none"`** - No substitutions at all:
+4. **`subs="+normal"`** - Adds normal substitutions to defaults (includes replacements):
+   ```asciidoc
+   [source,html,subs="+normal"]
+   ----
+   <p>Copyright &copy; 2024</p>  # &copy; becomes {copy}
+   ----
+   ```
+
+5. **`subs="normal,-replacements"`** - Normal substitutions but NOT replacements:
+   ```asciidoc
+   [source,html,subs="normal,-replacements"]
+   ----
+   <p>Copyright &copy; 2024</p>  # &copy; remains literal
+   ----
+   ```
+
+6. **`subs="none"`** - No substitutions at all:
    ```asciidoc
    [source,html,subs="none"]
    ----

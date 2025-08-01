@@ -278,7 +278,7 @@ class EntityReferenceRule(Rule):
         
         # Handle special values
         if subs_value == 'normal':
-            # Normal substitutions
+            # Normal substitutions include replacements
             return ['specialcharacters', 'quotes', 'attributes', 'replacements', 'macros', 'post_replacements']
         elif subs_value == 'none':
             return []
@@ -305,7 +305,12 @@ class EntityReferenceRule(Rule):
             elif part.startswith('+'):
                 # Explicit add with +prefix
                 sub_type = part[1:]
-                if sub_type and sub_type not in active_subs:
+                # Handle +normal specially - it adds all normal substitutions
+                if sub_type == 'normal':
+                    for normal_sub in ['specialcharacters', 'quotes', 'attributes', 'replacements', 'macros', 'post_replacements']:
+                        if normal_sub not in active_subs:
+                            active_subs.append(normal_sub)
+                elif sub_type and sub_type not in active_subs:
                     active_subs.append(sub_type)
             elif part.startswith('-'):
                 # Remove from existing
