@@ -308,7 +308,8 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (July 2025)
 
 ### Statistics
-- Total commits: 221
+- Total commits: 226
+- ⚠️  Breaking changes: 1
 
 ### Latest Achievements
 - ✅ Entityreference rule now respects asciidoc subs attributes.
@@ -318,15 +319,15 @@ A comprehensive test suite prevents Jekyll deployment failures:
 - ✅ Reintroduce claude.md updater workflow with enhanced commit parsing.
 
 ### Development Focus
-- **Ci/Cd**: 89 commits
+- **Ci/Cd**: 92 commits
 - **Features**: 23 commits
 - **Bug Fixes**: 18 commits
 - **Documentation**: 17 commits
-- **Testing**: 13 commits
+- **Testing**: 14 commits
 
 ### Most Active Files
-- `docs/_data/recent_commits.yml`: 85 changes
-- `CLAUDE.md`: 64 changes
+- `docs/_data/recent_commits.yml`: 88 changes
+- `CLAUDE.md`: 65 changes
 - `src/aditi/commands/journey.py`: 19 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
