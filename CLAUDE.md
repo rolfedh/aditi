@@ -308,26 +308,26 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (July 2025)
 
 ### Statistics
-- Total commits: 226
+- Total commits: 228
 - ⚠️  Breaking changes: 1
 
 ### Latest Achievements
+- ✅ Implement automation plan for aditi rule creation from vale rules.
 - ✅ Entityreference rule now respects asciidoc subs attributes.
 - ✅ Implement single-source versioning.
 - ✅ Add intermediate recheck step and fix accurate fix counting in journey workflow.
 - ✅ Add vale configuration and update asciidocdita styles for improved validation.
-- ✅ Reintroduce claude.md updater workflow with enhanced commit parsing.
 
 ### Development Focus
-- **Ci/Cd**: 92 commits
-- **Features**: 23 commits
+- **Ci/Cd**: 93 commits
+- **Features**: 24 commits
 - **Bug Fixes**: 18 commits
 - **Documentation**: 17 commits
 - **Testing**: 14 commits
 
 ### Most Active Files
-- `docs/_data/recent_commits.yml`: 88 changes
-- `CLAUDE.md`: 65 changes
+- `docs/_data/recent_commits.yml`: 89 changes
+- `CLAUDE.md`: 66 changes
 - `src/aditi/commands/journey.py`: 19 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
