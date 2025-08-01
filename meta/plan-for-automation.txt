@@ -1,0 +1,165 @@
+Plan for Automating Aditi Rule Creation
+
+  1. Test-Driven Rule Generation Architecture
+
+  AsciiDocDITA Repository
+  ├── styles/AsciiDocDITA/
+  │   └── *.yml (Vale rule definitions)
+  └── fixtures/
+      ├── RuleName/
+      │   ├── ignore_*.adoc (patterns that should NOT trigger)
+      │   └── report_*.adoc (patterns that SHOULD trigger)
+
+      ↓ Automated Conversion Pipeline ↓
+
+  Aditi Rules
+  ├── src/aditi/rules/
+  │   └── rule_name.py (generated implementation)
+  └── tests/fixtures/
+      └── rule_name/
+          ├── valid_cases.adoc (from ignore_*)
+          └── violation_cases.adoc (from report_*)
+
+  2. Rule Generation Pipeline
+
+  Phase 1: Analysis
+  - Parse Vale YAML rule definition
+  - Parse fixture files to understand:
+    - What patterns trigger violations (report_*.adoc)
+    - What patterns should be ignored (ignore_*.adoc)
+    - Edge cases and context sensitivity
+
+  Phase 2: Classification
+  - Analyze patterns to determine fix type:
+    - Fully Deterministic: Clear 1:1 mappings (e.g., &copy; → {copy})
+    - Partially Deterministic: Can add placeholders (e.g., missing attributes)
+    - Non-Deterministic: Only flag, no fix possible
+
+  Phase 3: Implementation Generation
+  - Generate Python rule class with:
+    - Pattern matching from fixtures
+    - Fix logic based on classification
+    - Context awareness (code blocks, comments, etc.)
+    - Test cases from fixtures
+
+  3. Systematic Update Checking Strategy
+
+  Option A: GitHub Actions Workflow
+  name: Check Vale Rules Updates
+  on:
+    schedule:
+      - cron: '0 0 * * 0'  # Weekly check
+    workflow_dispatch:  # Manual trigger
+
+  jobs:
+    check-updates:
+      steps:
+        1. Checkout both repositories
+        2. Compare rule files (hash/diff)
+        3. Generate change report
+        4. Create PR if changes detected
+        5. Run test suite against new fixtures
+
+  Option B: Git Submodule Approach
+  # Add AsciiDocDITA as submodule
+  git submodule add https://github.com/jhradilek/asciidoctor-dita-vale.git upstream-vale
+
+  # Update script checks for changes
+  ./scripts/check-upstream-changes.py
+  # - Compares rule definitions
+  # - Identifies new/modified/deleted rules
+  # - Generates update report
+
+  Option C: Dependency Management
+  # pyproject.toml
+  [tool.aditi.upstream]
+  vale-rules-repo = "jhradilek/asciidoctor-dita-vale"
+  vale-rules-version = "v1.2.3"  # Pin to release
+  auto-check-updates = true
+
+  4. Change Detection and Update Process
+
+  # Conceptual update checker
+  class ValeRulesSyncChecker:
+      def check_for_updates(self):
+          changes = {
+              "new_rules": [],
+              "modified_rules": [],
+              "deleted_rules": [],
+              "fixture_changes": []
+          }
+
+          # 1. Compare rule YAML files
+          # 2. Compare fixture files
+          # 3. Generate compatibility report
+          # 4. Suggest required Aditi updates
+
+          return UpdateReport(changes)
+
+  5. Rule Plugin Architecture
+
+  Each Aditi rule would be a self-contained "plugin":
+
+  # src/aditi/rules/entity_reference.py
+  class EntityReferenceRule(Rule):
+      # Auto-generated metadata
+      upstream_version = "2024-01-15"
+      upstream_hash = "abc123..."
+      fixtures_hash = "def456..."
+
+      # Generated from fixtures analysis
+      IGNORE_PATTERNS = [...]  # From ignore_*.adoc
+      REPORT_PATTERNS = [...]  # From report_*.adoc
+
+  6. Continuous Integration Strategy
+
+  Development Workflow:
+  1. Upstream Monitor runs weekly/on-demand
+  2. Change Detector identifies updates
+  3. Rule Generator creates/updates implementations
+  4. Test Generator creates tests from fixtures
+  5. Validation Suite ensures compatibility
+  6. PR Generator creates update PR
+
+  Benefits:
+  - Always in sync with upstream Vale rules
+  - Test cases automatically maintained
+  - Clear audit trail of changes
+  - No manual rule implementation needed
+
+  7. Implementation Priorities
+
+  High Priority Rules (Fully Automatable):
+  - EntityReference (already done)
+  - AttributeReference (simple substitutions)
+  - Any rule with clear substitution patterns
+
+  Medium Priority (Partially Automatable):
+  - ContentType (already done)
+  - Missing attribute rules
+  - Structure addition rules
+
+  Low Priority (Flag Only):
+  - Semantic rules (TaskSection, etc.)
+  - Cross-reference validation
+  - Complex structural rules
+
+  8. Versioning and Compatibility
+
+  # Track compatibility in metadata
+  class RuleMetadata:
+      vale_style_version: str = "1.2.3"
+      last_sync_date: str = "2024-01-15"
+      compatibility_notes: List[str] = [
+          "Added support for +normal subs",
+          "Fixed nested code block handling"
+      ]
+
+  This approach would create a robust, maintainable system that:
+  - Automatically stays in sync with upstream
+  - Generates test-driven implementations
+  - Provides clear visibility into changes
+  - Maintains high code quality through fixtures
+  - Reduces manual implementation effort
+
+  Would you like me to start implementing any specific part of this plan?
