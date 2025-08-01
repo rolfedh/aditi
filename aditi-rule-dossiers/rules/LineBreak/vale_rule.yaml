@@ -1,0 +1,11 @@
+# LineBreak Vale rule definition
+# Source: https://github.com/jhradilek/asciidoctor-dita-vale/blob/main/styles/AsciiDocDITA/LineBreak.yml
+extends: existence
+message: "Hard line breaks are not supported in DITA."
+level: warning
+scope: raw
+tokens:
+  - '\s\+$'  # Line ending with space + plus sign
+  - ':hardbreaks-option:'  # Hardbreaks attribute
+  - '\[options=["\']?hardbreaks["\']?\]'  # Options attribute with hardbreaks
+  - '\[%hardbreaks\]'  # Shorthand hardbreaks syntax

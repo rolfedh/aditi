@@ -1,0 +1,66 @@
+{
+  "name": "LineBreak",
+  "fix_type": "fully_deterministic",
+  "description": "Detects and removes hard line breaks that are not supported in DITA",
+  "vale_rule": {
+    "extends": "existence",
+    "message": "Hard line breaks are not supported in DITA.",
+    "level": "warning",
+    "scope": "raw",
+    "tokens": [
+      "\\s\\+$",
+      ":hardbreaks-option:",
+      "\\[options=[\"']?hardbreaks[\"']?\\]",
+      "\\[%hardbreaks\\]"
+    ]
+  },
+  "fix_strategy": {
+    "type": "pattern_based_replacement",
+    "patterns": [
+      {
+        "description": "Remove trailing space + plus sign",
+        "pattern": "\\s\\+$",
+        "replacement": "",
+        "multiline": false
+      },
+      {
+        "description": "Remove hardbreaks-option attribute",
+        "pattern": "^:hardbreaks-option:\\s*$",
+        "replacement": "",
+        "multiline": true
+      },
+      {
+        "description": "Remove options attribute with hardbreaks",
+        "pattern": "^\\[options=[\"']?hardbreaks[\"']?\\]\\s*$",
+        "replacement": "",
+        "multiline": true
+      },
+      {
+        "description": "Remove shorthand hardbreaks syntax",
+        "pattern": "^\\[%hardbreaks\\]\\s*$",
+        "replacement": "",
+        "multiline": true
+      }
+    ],
+    "exceptions": ["comments", "code_blocks", "inline_code"]
+  },
+  "test_cases": {
+    "positive": ["fixtures/report_line_break.adoc"],
+    "negative": ["fixtures/ignore_comments.adoc"]
+  },
+  "ai_analysis": {
+    "model": "claude-opus-4",
+    "timestamp": "2025-08-01T12:00:00Z",
+    "confidence_score": 0.95,
+    "implementation_notes": "Hard line breaks in AsciiDoc are achieved through various syntaxes that need to be removed for DITA compatibility. The fix involves removing the syntax markers while preserving the text content."
+  },
+  "implementation_details": {
+    "algorithm": "1. Detect line break syntax patterns\n2. Remove the syntax markers\n3. Preserve the actual text content\n4. Handle edge cases like comments and code blocks",
+    "edge_cases": [
+      "Line breaks within comments should be ignored",
+      "Line breaks within code blocks should be preserved",
+      "Multiple consecutive line breaks",
+      "Line breaks at the end of files"
+    ]
+  }
+}
