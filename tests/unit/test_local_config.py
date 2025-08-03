@@ -96,6 +96,43 @@ class TestLocalConfigManager:
         assert len(config.repositories) == 1
         assert "local-repo" in config.repositories
     
+    def test_load_config_no_migration(self, tmp_path):
+        """Test that load_config doesn't automatically migrate."""
+        # Create global config directory
+        global_dir = tmp_path / "aditi-data"
+        global_dir.mkdir()
+        
+        # Create repository
+        repo_root = tmp_path / "no-auto-migrate"
+        repo_root.mkdir()
+        
+        # Create global config with this repo
+        global_config = {
+            "version": "1.0",
+            "repositories": {
+                "no-auto-migrate": {
+                    "root": str(repo_root),
+                    "default_branch": "main",
+                    "subdirectory_permissions": [],
+                    "feature_branch_prefix": "aditi/"
+                }
+            }
+        }
+        
+        (global_dir / "config.json").write_text(json.dumps(global_config, indent=2))
+        
+        # Create manager with mocked global dir
+        manager = LocalConfigManager(start_path=repo_root)
+        manager.global_config_dir = global_dir
+        
+        # Load config should NOT trigger migration
+        config = manager.load_config()
+        
+        # Should get empty config, not migrated one
+        assert not manager.has_local_config()
+        assert len(config.repositories) == 0
+        assert config.current_repository is None
+    
     def test_has_local_config(self, tmp_path):
         """Test checking for local configuration."""
         # Without .aditi directory
@@ -111,8 +148,8 @@ class TestLocalConfigManager:
         manager = LocalConfigManager(start_path=repo_with_config)
         assert manager.has_local_config()
     
-    def test_migrate_from_global(self, tmp_path):
-        """Test migrating from global configuration."""
+    def test_can_migrate_from_global(self, tmp_path):
+        """Test checking if migration from global is possible."""
         # Create global config directory
         global_dir = tmp_path / "aditi-data"
         global_dir.mkdir()
@@ -143,8 +180,18 @@ class TestLocalConfigManager:
         manager = LocalConfigManager(start_path=repo_root)
         manager.global_config_dir = global_dir
         
-        # Load config (should trigger migration)
-        config = manager.load_config()
+        # Check migration is possible
+        assert manager.can_migrate_from_global() is True
+        
+        # Get migration info
+        migration_info = manager.get_migration_info()
+        assert migration_info is not None
+        repo_name, repo_config, _ = migration_info
+        assert repo_name == "migrate-repo"
+        assert repo_config.default_branch == "develop"
+        
+        # Perform migration
+        config = manager.migrate_from_global()
         
         # Check migration happened
         assert manager.has_local_config()
@@ -154,6 +201,9 @@ class TestLocalConfigManager:
         # Check allowed paths were migrated
         assert len(config.allowed_paths) == 1
         assert config.allowed_paths[0] == repo_root / "docs"
+        
+        # Check can_migrate is now false after migration
+        assert manager.can_migrate_from_global() is False
     
     def test_get_config_location(self, tmp_path):
         """Test getting config location description."""

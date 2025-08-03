@@ -177,6 +177,81 @@ class LocalConfigManager(ConfigManager):
                     f.write(f"{line}\n")
             logger.info(f"Updated .gitignore with Aditi patterns")
     
+    def can_migrate_from_global(self) -> bool:
+        """Check if current repository can be migrated from global config.
+        
+        Returns:
+            True if migration is possible, False otherwise
+        """
+        # If we already have local config, no migration needed
+        if self.local_config_dir:
+            return False
+            
+        global_config_file = self.global_config_dir / "config.json"
+        if not global_config_file.exists():
+            return False
+            
+        # Load global config to check if current repo is configured there
+        temp_manager = ConfigManager(config_dir=self.global_config_dir)
+        global_config = temp_manager.load_config()
+        
+        # Check if current directory is under any configured repository
+        current_path = self.start_path.resolve()
+        for repo_name, repo_config in global_config.repositories.items():
+            try:
+                current_path.relative_to(repo_config.root)
+                # We're in a configured repository
+                return True
+            except ValueError:
+                continue
+                
+        return False
+    
+    def get_migration_info(self) -> Optional[Tuple[str, RepositoryConfig, AditiConfig]]:
+        """Get migration information if available.
+        
+        Returns:
+            Tuple of (repo_name, repo_config, global_config) if migration possible,
+            None otherwise
+        """
+        if self.local_config_dir:
+            return None
+            
+        global_config_file = self.global_config_dir / "config.json"
+        if not global_config_file.exists():
+            return None
+            
+        # Load global config
+        temp_manager = ConfigManager(config_dir=self.global_config_dir)
+        global_config = temp_manager.load_config()
+        
+        # Find matching repository
+        current_path = self.start_path.resolve()
+        for repo_name, repo_config in global_config.repositories.items():
+            try:
+                current_path.relative_to(repo_config.root)
+                return (repo_name, repo_config, global_config)
+            except ValueError:
+                continue
+                
+        return None
+    
+    def migrate_from_global(self) -> AditiConfig:
+        """Perform migration from global to local config.
+        
+        Returns:
+            Migrated configuration
+            
+        Raises:
+            RuntimeError: If migration is not possible
+        """
+        migration_info = self.get_migration_info()
+        if not migration_info:
+            raise RuntimeError("No global configuration found for migration")
+            
+        repo_name, repo_config, global_config = migration_info
+        return self._migrate_from_global(repo_name, repo_config, global_config)
+    
     def load_config(self) -> AditiConfig:
         """Load configuration, preferring local over global.
         
@@ -187,28 +262,8 @@ class LocalConfigManager(ConfigManager):
         if self.local_config_dir:
             return super().load_config()
         
-        # Otherwise, check if we should migrate from global config
-        global_config_file = self.global_config_dir / "config.json"
-        if global_config_file.exists():
-            # Load global config to check if current repo is configured there
-            temp_manager = ConfigManager(config_dir=self.global_config_dir)
-            global_config = temp_manager.load_config()
-            
-            # Check if current directory is under any configured repository
-            current_path = self.start_path.resolve()
-            for repo_name, repo_config in global_config.repositories.items():
-                try:
-                    current_path.relative_to(repo_config.root)
-                    # We're in a configured repository
-                    logger.info(f"Found repository '{repo_name}' in global config")
-                    
-                    # Create local config based on global
-                    return self._migrate_from_global(repo_name, repo_config, global_config)
-                except ValueError:
-                    continue
-        
-        # No configuration found, create a new one
-        logger.info("No configuration found, creating new configuration")
+        # No automatic migration - just return empty config
+        logger.info("No local configuration found")
         return AditiConfig()
     
     def _migrate_from_global(

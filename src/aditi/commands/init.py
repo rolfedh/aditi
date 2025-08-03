@@ -139,15 +139,39 @@ def init_command(
         
         # Initialize local configuration
         config_manager = LocalConfigManager(project_root)
-        if not config_manager.has_local_config() or force:
-            try:
-                config_dir, config = config_manager.init_local_config(force=force)
-                console.print(f"[green]✓ Created local configuration at: {config_dir}[/green]")
-            except RuntimeError as e:
-                if "already exists" in str(e) and not force:
-                    console.print("[yellow]Local configuration already exists.[/yellow]")
+        
+        # Check if we can migrate from global config
+        if config_manager.can_migrate_from_global():
+            migration_info = config_manager.get_migration_info()
+            if migration_info:
+                repo_name, repo_config, _ = migration_info
+                console.print(
+                    f"\n[bold yellow]Found existing configuration for repository '{repo_name}'[/bold yellow]\n"
+                    f"Repository root: {repo_config.root}\n"
+                    f"Default branch: {repo_config.default_branch}"
+                )
+                
+                # Ask if user wants to migrate
+                if typer.confirm("\nWould you like to migrate this configuration to local?", default=True):
+                    console.print("[cyan]Migrating configuration...[/cyan]")
+                    config = config_manager.migrate_from_global()
+                    console.print(f"[green]✓ Migrated configuration to .aditi/[/green]")
                 else:
-                    raise
+                    # Create fresh config if migration declined
+                    if not config_manager.has_local_config() or force:
+                        config_dir, config = config_manager.init_local_config(force=force)
+                        console.print(f"[green]✓ Created fresh local configuration at: {config_dir}[/green]")
+        else:
+            # No migration available, create fresh config
+            if not config_manager.has_local_config() or force:
+                try:
+                    config_dir, config = config_manager.init_local_config(force=force)
+                    console.print(f"[green]✓ Created local configuration at: {config_dir}[/green]")
+                except RuntimeError as e:
+                    if "already exists" in str(e) and not force:
+                        console.print("[yellow]Local configuration already exists.[/yellow]")
+                    else:
+                        raise
         
         console.print(
             "\n[green]✓ Aditi initialized successfully![/green]\n"

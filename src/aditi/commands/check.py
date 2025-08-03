@@ -48,7 +48,18 @@ def check_command(
     # Check if we need to initialize first
     if not config_manager.has_local_config():
         console.print("[yellow]No local configuration found.[/yellow]")
-        console.print("Please run [bold]aditi init[/bold] first to initialize the repository.")
+        
+        # Check if migration is available
+        if config_manager.can_migrate_from_global():
+            migration_info = config_manager.get_migration_info()
+            if migration_info:
+                repo_name, _, _ = migration_info
+                console.print(
+                    f"[cyan]Found existing configuration for repository '{repo_name}' in global config.[/cyan]\n"
+                    f"Run [bold]aditi init[/bold] to migrate this configuration or create a fresh one."
+                )
+        else:
+            console.print("Please run [bold]aditi init[/bold] first to initialize the repository.")
         raise typer.Exit(1)
     
     config = config_manager.load_config()

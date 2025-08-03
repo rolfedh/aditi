@@ -62,14 +62,19 @@ A new `LocalConfigManager` class extends `ConfigManager` with:
    - Tool preferences
    - Legacy repository registry (for migration)
 
-#### Migration Path
+#### Migration Path (Implemented: Option 2)
 
-When a command is run in a repository:
+Migration happens explicitly during `aditi init`:
 
-1. Check for `.aditi/config.json` (use if found)
-2. If not found, check if current directory is in global config
-3. If found in global, offer to migrate to local config
-4. Create local config with migrated settings
+1. **Detection**: When `aditi init` runs, it checks if the current repository exists in global config
+2. **User Prompt**: If found, shows existing configuration and asks: "Would you like to migrate this configuration to local?"
+3. **Migration**: If accepted, copies repository settings and relevant paths to local config
+4. **Fresh Start**: If declined, creates a fresh local configuration
+
+Commands (`check`, `journey`) will:
+- Check for local config first
+- If missing, inform user if migration is available
+- Direct user to run `aditi init` to set up or migrate
 
 ### Command Updates
 
