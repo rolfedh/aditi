@@ -176,3 +176,70 @@ with break."""
         
         # Verify the result matches expected
         assert result_content == expected_content
+    
+    def test_inline_code_protection(self):
+        """Test that inline code with + is protected from fixes."""
+        content = """= Technical Document
+
+Use `grep '[0-9]+' file.txt` to find patterns.
+This line has a real break +
+that should be fixed.
+
+Run the command ``sed 's/ +/,/g'`` carefully.
+Another real line break +
+here as well.
+
+The +C+++ language is powerful.
+Mathematical: `x + y` equals sum."""
+        
+        # Simulate violations that Vale would detect
+        violations = [
+            Violation(
+                file_path=Path("test.adoc"),
+                line=3,
+                column=30,  # The + in grep command
+                severity=Severity.WARNING,
+                message="Hard line breaks are not supported in DITA.",
+                check="AsciiDocDITA.LineBreak",
+                rule_name="LineBreak",
+                original_text="+"
+            ),
+            Violation(
+                file_path=Path("test.adoc"),
+                line=4,
+                column=29,  # Real line break
+                severity=Severity.WARNING,
+                message="Hard line breaks are not supported in DITA.",
+                check="AsciiDocDITA.LineBreak",
+                rule_name="LineBreak",
+                original_text=" +"
+            ),
+            Violation(
+                file_path=Path("test.adoc"),
+                line=8,
+                column=28,  # Another real line break
+                severity=Severity.WARNING,
+                message="Hard line breaks are not supported in DITA.",
+                check="AsciiDocDITA.LineBreak",
+                rule_name="LineBreak",
+                original_text=" +"
+            )
+        ]
+        
+        rule = LineBreakRule()
+        fixes = []
+        
+        for violation in violations:
+            fix = rule.generate_fix(violation, content)
+            if fix:
+                fixes.append(fix)
+        
+        # Should only fix the real line breaks, not the + in code
+        assert len(fixes) == 2
+        
+        # Check that real line breaks are fixed
+        assert fixes[0].violation.line == 4
+        assert fixes[0].replacement_text == "This line has a real break"
+        
+        assert fixes[1].violation.line == 8
+        assert fixes[1].replacement_text == "Another real line break"

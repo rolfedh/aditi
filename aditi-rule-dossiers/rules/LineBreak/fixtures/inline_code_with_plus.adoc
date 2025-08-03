@@ -1,0 +1,29 @@
+= Technical Documentation with Commands
+
+// Examples of + in inline code that should NOT be flagged
+
+== Regular Expressions
+Use the command `grep '[0-9]+' file.txt` to find numbers.
+The pattern `[a-zA-Z]+` matches one or more letters.
+Run `sed 's/[[:space:]]+/,/g' data.csv` to convert spaces to commas.
+
+== Mathematical Operations
+Calculate with `echo $((5 + 3))` in bash.
+The expression `x + y` adds two values.
+Use ``counter++`` to increment.
+
+== C++ Examples
+The language +C+++ supports operator overloading.
+Use `std::vector<int> operator+(const std::vector<int>& v)` for vector addition.
+
+== Shell Line Continuation
+This is different and should still be caught +
+because it's an actual line break.
+
+== More Code Examples
+The regex `\w+` matches word characters.
+Use `git log --oneline | head -10` to see recent commits.
+Pattern ``[0-9]+`` in double backticks.
+
+// But this line ends with a hard break +
+// and should be fixed.

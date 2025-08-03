@@ -1,7 +1,7 @@
 # LineBreak Rule Implementation Summary
 
 ## Overview
-Successfully implemented the LineBreak rule as a fully deterministic fix for AsciiDoc hard line breaks that are not supported in DITA.
+Successfully implemented the LineBreak rule as a fully deterministic fix for AsciiDoc hard line breaks that are not supported in DITA. Updated to handle inline code protection to avoid false positives with commands and code that legitimately contain + characters.
 
 ## Implementation Details
 
@@ -29,7 +29,10 @@ Successfully implemented the LineBreak rule as a fully deterministic fix for Asc
 ### Edge Cases Handled
 1. **Comments**: Line breaks within comments are ignored
 2. **Code blocks**: Line breaks within code blocks (delimited by `----`, `....`, or ` ` ` `) are preserved
-3. **Multiple variations**: Handles different quote styles in options attribute
+3. **Inline code**: Plus signs within backticks (`grep '[0-9]+'`) are not treated as line breaks
+4. **Double backticks**: Commands in double backticks (``sed 's/ +/,/g'``) are protected
+5. **Literal passthrough**: Plus signs in literal passthrough (+C+++) are preserved
+6. **Multiple variations**: Handles different quote styles in options attribute
 
 ### Files Created/Modified
 
@@ -50,18 +53,19 @@ aditi-rule-dossiers/rules/LineBreak/
 ```
 
 ### Test Results
-- **Unit Tests**: 10/10 passed
-- **Integration Tests**: 2/2 passed
+- **Unit Tests**: 14/14 passed (added 4 new tests for inline code protection)
+- **Integration Tests**: 3/3 passed (added test for inline code scenarios)
 - **Code Coverage**: 89% for line_break.py
 
 ### Algorithm Summary
 1. Check if violation is in a comment → Skip if true
 2. Check if violation is in a code block → Skip if true
-3. Identify the specific pattern type
-4. Apply appropriate fix:
+3. For trailing `+` patterns: Check if the + is within inline code → Skip if true
+4. Identify the specific pattern type
+5. Apply appropriate fix:
    - For trailing `+`: Remove suffix while preserving text
    - For attribute lines: Remove entire line
-5. Validate fix before returning
+6. Validate fix before returning
 
 ### Performance Characteristics
 - **Time Complexity**: O(n) where n is the number of lines in the file (for code block detection)
@@ -70,3 +74,8 @@ aditi-rule-dossiers/rules/LineBreak/
 
 ## Conclusion
 The LineBreak rule has been successfully implemented as a fully deterministic fix, demonstrating the effectiveness of the AI-assisted rule development pipeline proposed in the design document. The implementation follows established patterns from EntityReference and ContentType rules while handling the specific requirements of line break removal.
+
+### Key Improvements in Updated Implementation
+- **False Positive Protection**: The rule now correctly identifies and skips plus signs that are part of inline code, preventing corruption of technical documentation
+- **Context-Aware Processing**: Distinguishes between actual line breaks and legitimate uses of + in commands, regular expressions, and code
+- **Technical Documentation Focus**: Optimized for Red Hat's technical documentation use case where commands and code snippets frequently contain + characters

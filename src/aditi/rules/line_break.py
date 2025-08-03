@@ -64,6 +64,37 @@ class LineBreakRule(Rule):
         
         return in_code_block
     
+    def _is_in_inline_code(self, line_content: str, column: int) -> bool:
+        """Check if the + is within inline code (backticks).
+        
+        Args:
+            line_content: The content of the line
+            column: The column position of the violation (1-based)
+            
+        Returns:
+            True if the + is inside inline code
+        """
+        # Find all backtick pairs in the line
+        # Match both single backticks and double backticks
+        patterns = [
+            (r'``[^`]+``', 2),  # Double backticks (offset 2)
+            (r'`[^`]+`', 1)     # Single backticks (offset 1)
+        ]
+        
+        for pattern, offset in patterns:
+            for match in re.finditer(pattern, line_content):
+                # Adjust for 1-based column indexing
+                if match.start() + offset < column - 1 < match.end() - offset:
+                    return True
+        
+        # Also check for literal passthrough (single plus signs)
+        # Pattern: +text+
+        for match in re.finditer(r'\+[^+]+\+', line_content):
+            if match.start() < column - 1 < match.end():
+                return True
+                
+        return False
+    
     def generate_fix(self, violation: Violation, file_content: str) -> Optional[Fix]:
         """Generate a fix for the violation."""
         if not self.can_fix(violation):
@@ -82,6 +113,11 @@ class LineBreakRule(Rule):
         
         # Check for different hard break patterns
         if re.search(r'\s\+\s*$', line_content):
+            # Check if the + is inside inline code before fixing
+            match = re.search(r'\s\+\s*$', line_content)
+            if match and self._is_in_inline_code(line_content, match.start() + 2):
+                # The + is part of inline code, don't fix
+                return None
             # Remove trailing space + plus sign
             replacement_text = re.sub(r'\s\+\s*$', '', line_content).rstrip()
             description = "Remove trailing + hard line break"

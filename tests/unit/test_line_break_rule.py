@@ -228,3 +228,84 @@ hard break +
             fix = self.rule.generate_fix(violation, content)
             assert fix is not None
             assert fix.replacement_text == ""
+    
+    def test_inline_code_with_plus(self):
+        """Test that + inside inline code is not fixed."""
+        content = """Use the command `grep '[0-9]+' file.txt` to find numbers.
+Run `sed 's/[[:space:]]+/,/g'` to replace spaces.
+The regex `[a-z]+` matches lowercase letters."""
+        
+        # Test first line with grep command
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            line=1,
+            column=30,  # Position of + in grep command
+            severity=Severity.WARNING,
+            message="Hard line breaks are not supported in DITA.",
+            check="AsciiDocDITA.LineBreak",
+            rule_name="LineBreak",
+            original_text="+"
+        )
+        
+        fix = self.rule.generate_fix(violation, content)
+        assert fix is None  # Should not fix + inside inline code
+    
+    def test_inline_code_double_backticks(self):
+        """Test that + inside double backtick inline code is not fixed."""
+        content = """Use ``command +`` for line continuation.
+The pattern ``[0-9]+`` matches digits."""
+        
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            line=1,
+            column=15,  # Position of + in command
+            severity=Severity.WARNING,
+            message="Hard line breaks are not supported in DITA.",
+            check="AsciiDocDITA.LineBreak",
+            rule_name="LineBreak",
+            original_text=" +"
+        )
+        
+        fix = self.rule.generate_fix(violation, content)
+        assert fix is None  # Should not fix + inside inline code
+    
+    def test_literal_passthrough_with_plus(self):
+        """Test that + inside literal passthrough is not fixed."""
+        content = """The symbol +text+ is literal.
+Use +C+++ for the language."""
+        
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            line=2,
+            column=7,  # Position of + in C++
+            severity=Severity.WARNING,
+            message="Hard line breaks are not supported in DITA.",
+            check="AsciiDocDITA.LineBreak",
+            rule_name="LineBreak",
+            original_text="+"
+        )
+        
+        fix = self.rule.generate_fix(violation, content)
+        assert fix is None  # Should not fix + inside literal passthrough
+    
+    def test_actual_line_break_not_in_code(self):
+        """Test that actual line breaks outside code are fixed."""
+        content = """This is regular text +
+with a line break.
+But `grep +` is a command."""
+        
+        violation = Violation(
+            file_path=Path("test.adoc"),
+            line=1,
+            column=21,  # Position of + at end of line
+            severity=Severity.WARNING,
+            message="Hard line breaks are not supported in DITA.",
+            check="AsciiDocDITA.LineBreak",
+            rule_name="LineBreak",
+            original_text=" +"
+        )
+        
+        fix = self.rule.generate_fix(violation, content)
+        assert fix is not None
+        assert fix.replacement_text == "This is regular text"
+        assert "trailing +" in fix.description.lower()

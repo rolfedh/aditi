@@ -52,13 +52,16 @@
     "model": "claude-opus-4",
     "timestamp": "2025-08-01T12:00:00Z",
     "confidence_score": 0.95,
-    "implementation_notes": "Hard line breaks in AsciiDoc are achieved through various syntaxes that need to be removed for DITA compatibility. The fix involves removing the syntax markers while preserving the text content."
+    "implementation_notes": "Hard line breaks in AsciiDoc are achieved through various syntaxes that need to be removed for DITA compatibility. The fix involves removing the syntax markers while preserving the text content. Special care is taken to avoid false positives with commands and code that legitimately end with + characters."
   },
   "implementation_details": {
-    "algorithm": "1. Detect line break syntax patterns\n2. Remove the syntax markers\n3. Preserve the actual text content\n4. Handle edge cases like comments and code blocks",
+    "algorithm": "1. Detect line break syntax patterns\n2. Check if + is within inline code or literal passthrough\n3. Skip fixes for + inside code contexts\n4. Remove the syntax markers for actual line breaks\n5. Preserve the actual text content\n6. Handle edge cases like comments and code blocks",
     "edge_cases": [
       "Line breaks within comments should be ignored",
       "Line breaks within code blocks should be preserved",
+      "Plus signs within inline code (`grep +`) should not be fixed",
+      "Plus signs within double backticks (``command +``) should not be fixed",
+      "Plus signs within literal passthrough (+C+++) should not be fixed",
       "Multiple consecutive line breaks",
       "Line breaks at the end of files"
     ]
