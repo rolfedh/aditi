@@ -305,30 +305,30 @@ A comprehensive test suite prevents Jekyll deployment failures:
 5. **Validation**: Run `python tests/test_blog_post_validation.py` before committing
 
 <!-- AUTO-GENERATED:RECENT -->
-## Recent Development Focus (July 2025)
+## Recent Development Focus (August 2025)
 
 ### Statistics
-- Total commits: 228
+- Total commits: 231
 - ⚠️  Breaking changes: 1
 
 ### Latest Achievements
+- ✅ Implement repository-local configuration management.
 - ✅ Implement automation plan for aditi rule creation from vale rules.
 - ✅ Entityreference rule now respects asciidoc subs attributes.
 - ✅ Implement single-source versioning.
 - ✅ Add intermediate recheck step and fix accurate fix counting in journey workflow.
-- ✅ Add vale configuration and update asciidocdita styles for improved validation.
 
 ### Development Focus
-- **Ci/Cd**: 93 commits
-- **Features**: 24 commits
+- **Ci/Cd**: 94 commits
+- **Features**: 25 commits
 - **Bug Fixes**: 18 commits
 - **Documentation**: 17 commits
 - **Testing**: 14 commits
 
 ### Most Active Files
-- `docs/_data/recent_commits.yml`: 89 changes
-- `CLAUDE.md`: 66 changes
-- `src/aditi/commands/journey.py`: 19 changes
+- `docs/_data/recent_commits.yml`: 90 changes
+- `CLAUDE.md`: 67 changes
+- `src/aditi/commands/journey.py`: 20 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
 ## Building and Publishing

@@ -7,7 +7,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from ..config import ConfigManager
+from ..local_config import LocalConfigManager
 from ..vale_container import ValeContainer
 from ..processor import RuleProcessor
 from ..rules import FixType
@@ -42,33 +42,24 @@ def check_command(
     This command runs Vale with AsciiDocDITA rules to identify issues
     that need to be fixed before migration to DITA.
     """
-    # Initialize configuration
-    config_manager = ConfigManager()
-    config = config_manager.load_config()
+    # Initialize configuration using LocalConfigManager
+    config_manager = LocalConfigManager()
     
-    # If no configuration exists, create one automatically
-    if not config_manager.config_file.exists():
-        console.print("📝 Creating configuration for the first time...")
-        console.print("🔍 Scanning for AsciiDoc documentation directories...")
-        config = config_manager.create_default_config(scan_for_docs=True)
-        
-        if config.allowed_paths:
-            console.print(f"\n✅ Found documentation in {len(config.allowed_paths)} location(s):")
-            for path in config.allowed_paths:
-                console.print(f"  • {path}")
-        else:
-            console.print("\n[yellow]No .adoc files found in subdirectories.[/yellow]")
-            console.print("You can specify paths directly: [bold]aditi check path/to/docs[/bold]")
+    # Check if we need to initialize first
+    if not config_manager.has_local_config():
+        console.print("[yellow]No local configuration found.[/yellow]")
+        console.print("Please run [bold]aditi init[/bold] first to initialize the repository.")
+        raise typer.Exit(1)
+    
+    config = config_manager.load_config()
+    console.print(f"[dim]Using configuration from: {config_manager.get_config_location()}[/dim]")
     
     # Determine which paths to check
     if not paths:
-        # Use configured directories
-        if not config.allowed_paths:
-            console.print("[yellow]No paths configured for checking.[/yellow]")
-            console.print("To add paths, run: [bold]aditi journey[/bold] or specify paths directly:")
-            console.print("  [bold]aditi check path/to/docs[/bold]")
-            raise typer.Exit(1)
-        paths_to_check = config.allowed_paths
+        # Use current directory by default
+        repo_root = config_manager.find_repository_root() or Path.cwd()
+        paths_to_check = [repo_root]
+        console.print(f"[dim]Checking repository root: {repo_root}[/dim]")
     else:
         # If paths are provided and no config was just created, add them to allowed paths
         skipped_paths = []

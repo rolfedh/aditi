@@ -177,6 +177,7 @@ cython_debug/
 
 # Aditi-specific
 .vale_temp/
+.aditi/
 
 # Abstra
 # Abstra is an AI-powered process automation framework.

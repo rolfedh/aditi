@@ -12,6 +12,7 @@ from rich.console import Console
 from rich.progress import Progress, SpinnerColumn, TextColumn
 
 from ..vale_container import ValeContainer, check_container_runtime
+from ..local_config import LocalConfigManager
 
 logger = logging.getLogger(__name__)
 console = Console()
@@ -136,10 +137,23 @@ def init_command(
             vale.init_vale_config(project_root, force=force)
             progress.update(task, completed=True)
         
+        # Initialize local configuration
+        config_manager = LocalConfigManager(project_root)
+        if not config_manager.has_local_config() or force:
+            try:
+                config_dir, config = config_manager.init_local_config(force=force)
+                console.print(f"[green]✓ Created local configuration at: {config_dir}[/green]")
+            except RuntimeError as e:
+                if "already exists" in str(e) and not force:
+                    console.print("[yellow]Local configuration already exists.[/yellow]")
+                else:
+                    raise
+        
         console.print(
             "\n[green]✓ Aditi initialized successfully![/green]\n"
             f"Vale configuration created at: {vale_ini}\n"
-            "AsciiDocDITA styles downloaded to: .vale/styles/\n\n"
+            "AsciiDocDITA styles downloaded to: .vale/styles/\n"
+            f"Local configuration stored at: .aditi/\n\n"
             "[bold]Next steps:[/bold]\n"
             "1. Run 'aditi check' to validate your AsciiDoc files\n"
             "2. Run 'aditi journey' for a guided migration workflow"

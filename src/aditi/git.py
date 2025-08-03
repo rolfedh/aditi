@@ -37,6 +37,76 @@ class GitCommand:
         console.print(panel)
 
 
+class GitManager:
+    """Manager for Git operations."""
+    
+    def __init__(self, repo_path: Path):
+        """Initialize Git manager.
+        
+        Args:
+            repo_path: Path to the repository
+        """
+        self.repo_path = repo_path
+    
+    def is_git_repository(self) -> bool:
+        """Check if the path is inside a git repository.
+        
+        Returns:
+            True if path is inside a git repository
+        """
+        return is_git_repository(self.repo_path)
+    
+    def get_default_branch(self) -> Optional[str]:
+        """Get the default branch name for the repository.
+        
+        Returns:
+            Default branch name (e.g., 'main' or 'master'), or None if not found
+        """
+        try:
+            # Try to get the default branch from origin
+            result = subprocess.run(
+                ["git", "symbolic-ref", "refs/remotes/origin/HEAD"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                # Output is like "refs/remotes/origin/main"
+                return result.stdout.strip().split("/")[-1]
+            
+            # Fallback: check local branches
+            result = subprocess.run(
+                ["git", "branch"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0:
+                branches = result.stdout.strip().split("\n")
+                for branch in branches:
+                    branch = branch.strip().lstrip("* ")
+                    if branch in ["main", "master"]:
+                        return branch
+            
+            # Last resort: get current branch
+            result = subprocess.run(
+                ["git", "rev-parse", "--abbrev-ref", "HEAD"],
+                cwd=self.repo_path,
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            if result.returncode == 0 and result.stdout.strip():
+                return result.stdout.strip()
+                
+        except Exception:
+            pass
+        
+        return None
+
+
 def is_git_repository(path: Path) -> bool:
     """Check if the given path is inside a git repository.
     

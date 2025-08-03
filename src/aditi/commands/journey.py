@@ -13,7 +13,7 @@ from rich.panel import Panel
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.table import Table
 
-from ..config import ConfigManager
+from ..local_config import LocalConfigManager
 from ..scanner import DirectoryScanner
 from ..vale_container import ValeContainer
 from ..processor import RuleProcessor
@@ -233,7 +233,13 @@ RULE_PROCESSING_ORDER = [
 
 def journey_command(dry_run: bool = False, clear: bool = False, status: bool = False) -> None:
     """Start an interactive journey to prepare AsciiDoc files for DITA migration."""
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
+    
+    # Check if we need to initialize first
+    if not config_manager.has_local_config():
+        console.print("[yellow]No local configuration found.[/yellow]")
+        console.print("Please run [bold]aditi init[/bold] first to initialize the repository.")
+        raise typer.Exit(1)
     
     # Handle --clear flag
     if clear:
@@ -357,7 +363,7 @@ def journey_command(dry_run: bool = False, clear: bool = False, status: bool = F
         return
     
     # Normal interactive mode
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
     session = config_manager.load_session()
     
     # Check if we have an existing session
@@ -414,7 +420,7 @@ def configure_repository() -> bool:
         True if configuration was successful, False otherwise
     """
     # Initialize configuration manager
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
     config = config_manager.load_config()
     
     # If no configuration exists, create one automatically
@@ -694,7 +700,7 @@ def save_configuration(root_path: Path, selected_dirs: Optional[List[Path]]) -> 
         root_path: Repository root path
         selected_dirs: Selected directories or None for all
     """
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
     config = config_manager.load_config()
 
     # Update configuration
@@ -734,7 +740,7 @@ def apply_rules_workflow() -> bool:
     Returns:
         True if workflow completed, False if cancelled by user
     """
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
     config = config_manager.load_config()
     session = config_manager.load_session()
 
@@ -1163,7 +1169,7 @@ def collect_adoc_files(config) -> List[Path]:
 
 def complete_journey():
     """Complete the journey and generate report."""
-    config_manager = ConfigManager()
+    config_manager = LocalConfigManager()
     session = config_manager.load_session()
 
     # Generate report
