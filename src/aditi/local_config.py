@@ -225,14 +225,57 @@ class LocalConfigManager(ConfigManager):
         temp_manager = ConfigManager(config_dir=self.global_config_dir)
         global_config = temp_manager.load_config()
         
-        # Find matching repository
+        # Find matching repository with intelligent detection
         current_path = self.start_path.resolve()
+        
+        # Collect all potential matches
+        matches = []
         for repo_name, repo_config in global_config.repositories.items():
             try:
-                current_path.relative_to(repo_config.root)
-                return (repo_name, repo_config, global_config)
+                relative_path = current_path.relative_to(repo_config.root)
+                # Calculate match score
+                score = 0
+                
+                # Priority 1: Exact match (current dir is the repo root)
+                if relative_path == Path("."):
+                    score += 100
+                    
+                # Priority 2: Current directory has .git (is a Git repository)
+                if (current_path / ".git").is_dir():
+                    score += 50
+                    
+                # Priority 3: Repo root has .git (is a Git repository)  
+                if (repo_config.root / ".git").is_dir():
+                    score += 25
+                    
+                # Priority 4: Directory name matches repo name
+                if current_path.name == repo_name:
+                    score += 20
+                    
+                # Priority 5: Fewer levels deep (prefer closer matches)
+                depth = len(relative_path.parts)
+                score -= depth * 5
+                
+                matches.append((score, repo_name, repo_config))
+                
             except ValueError:
+                # Not under this repository
                 continue
+        
+        # Return the best match if any
+        if matches:
+            # Sort by score (highest first)
+            matches.sort(key=lambda x: x[0], reverse=True)
+            best_score, best_name, best_config = matches[0]
+            
+            # Use actual directory name if we're at a Git root
+            if (current_path / ".git").is_dir():
+                # Override the name with the actual directory name
+                actual_name = current_path.name
+                logger.info(f"Using actual repository name '{actual_name}' instead of '{best_name}'")
+                best_name = actual_name
+                
+            return (best_name, best_config, global_config)
                 
         return None
     
@@ -294,20 +337,34 @@ class LocalConfigManager(ConfigManager):
         # Copy relevant settings from global config
         local_config.vale_styles_path = global_config.vale_styles_path
         
-        # Update repository config with any global settings
-        if repo_name in global_config.repositories:
-            local_config.repositories[repo_name] = repo_config
-            local_config.current_repository = repo_name
+        # Only migrate the specific repository that matches
+        # First, check if we already created the repo during init_local_config
+        existing_repo_name = None
+        if local_config.repositories:
+            # Get the first (and should be only) repository name
+            existing_repo_name = list(local_config.repositories.keys())[0]
+            
+        # Update or replace with migrated repository
+        if existing_repo_name and existing_repo_name != repo_name:
+            # Remove the auto-created entry
+            del local_config.repositories[existing_repo_name]
+            
+        # Add the migrated repository with the correct name
+        local_config.repositories[repo_name] = repo_config
+        local_config.current_repository = repo_name
         
-        # Copy allowed paths if they're under this repository
+        # Copy allowed paths ONLY if they're under this repository
+        repo_root = repo_config.root
         for allowed_path in global_config.allowed_paths:
             try:
-                allowed_path.relative_to(repo_config.root)
+                # Check if path is under the repository root
+                allowed_path.relative_to(repo_root)
                 if allowed_path not in local_config.allowed_paths:
                     local_config.allowed_paths.append(allowed_path)
+                    logger.info(f"Migrated allowed path: {allowed_path}")
             except ValueError:
-                # Path is outside this repository
-                pass
+                # Path is outside this repository - skip it
+                logger.info(f"Skipping path outside repository: {allowed_path}")
         
         # Save migrated config
         self.save_config(local_config)

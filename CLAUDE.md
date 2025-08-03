@@ -308,27 +308,27 @@ A comprehensive test suite prevents Jekyll deployment failures:
 ## Recent Development Focus (August 2025)
 
 ### Statistics
-- Total commits: 231
+- Total commits: 233
 - ⚠️  Breaking changes: 1
 
 ### Latest Achievements
+- ✅ Implement intelligent repository detection for migration.
 - ✅ Implement repository-local configuration management.
 - ✅ Implement automation plan for aditi rule creation from vale rules.
 - ✅ Entityreference rule now respects asciidoc subs attributes.
 - ✅ Implement single-source versioning.
-- ✅ Add intermediate recheck step and fix accurate fix counting in journey workflow.
 
 ### Development Focus
-- **Ci/Cd**: 94 commits
-- **Features**: 25 commits
+- **Ci/Cd**: 95 commits
+- **Features**: 26 commits
 - **Bug Fixes**: 18 commits
 - **Documentation**: 17 commits
 - **Testing**: 14 commits
 
 ### Most Active Files
 - `docs/_data/recent_commits.yml`: 90 changes
-- `CLAUDE.md`: 67 changes
-- `src/aditi/commands/journey.py`: 20 changes
+- `CLAUDE.md`: 68 changes
+- `src/aditi/commands/journey.py`: 22 changes
 <!-- /AUTO-GENERATED:RECENT -->
 
 ## Building and Publishing

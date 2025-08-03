@@ -14,6 +14,7 @@ from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn
 from rich.table import Table
 
 from ..local_config import LocalConfigManager
+from ..config import ConfigManager
 from ..scanner import DirectoryScanner
 from ..vale_container import ValeContainer
 from ..processor import RuleProcessor
