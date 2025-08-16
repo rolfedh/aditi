@@ -11,12 +11,12 @@ I'm considering two new alternatives:
 
 With this workflow, aditi **just does what you tell it without regard to any other considerations** (i.e., it ignores prerequisites, directory configuration, journey configuration).
 
-## The book worflow
-1. User runs `aditi <submcommand> <path>/master.adoc`.
+## The book workflow
+1. User runs `aditi <subcommand> <path>/master.adoc`.
 2. Aditi performs the operation on all the files included in the master.adoc recursively down through the tree of included files.
 
 ## deprecating parts of the old workflow
-Given these two new workflows, I want to deprecate the old worflows, such as "aditi check" and "aditi journey". I might need to disable parts of those workflows by default.
+Given these two new workflows, I want to deprecate the old workflows, such as "aditi check" and "aditi journey". I might need to disable parts of those workflows by default.
 
 Interview questions and answers (A:)
 ● Based on my analysis of the current implementation, I need to ask you several
@@ -28,7 +28,7 @@ Interview questions and answers (A:)
 
   - What specific feedback led to the conclusion that aditi journey is "too  abstract and unnecessary"?
 
-  A: The project sponsor asked me "what if the user could just cd to the directory they want to work on and run a command?" They indicated that users don't want to be shephereded along a trail.
+  A: The project sponsor asked me "what if the user could just cd to the directory they want to work on and run a command?" They indicated that users don't want to be shepherded along a trail.
 
   - What aspects of the journey workflow are problematic for users?
 
@@ -100,7 +100,7 @@ For all operations that modify the files, confirm with user before performing op
 
   - `aditi <subcommand>`: If the command requires a subsubcommand such as `flag` or `fix` notify the user and give them a prompt to choose the subsubcommand. Otherwise, get user confirmation if needed, and then perform the subcommand on all files in current directory and subdirectories.
   - `aditi <subcommand> flag`: Flag all files in current directory and subdirectories with <subcommand> issues.
-  - `aditi <subcommand> fix`: Auto-fix all files in current directory and subdirectories with <subcommand> fixes. If not autofix exists, notify user.
+  - `aditi <subcommand> fix`: Auto-fix all files in current directory and subdirectories with <subcommand> fixes. If no auto-fix exists, notify user.
 - `aditi <subcommand> flag <path>/master.adoc`: Flag all files in the master.adoc file's tree of included files with <subcommand> issues.
   - `aditi <subcommand> autofix <path>/master.adoc`: Auto-fix all files in the master.adoc file's tree of included files with <subcommand> fixes.
 
@@ -148,7 +148,7 @@ For all operations that modify the files, confirm with user before performing op
   A: No.
 
   - What's the timeline for deprecating the old workflows?
-  A: Now - I'm going to release this as a major verion upgrade (1.0.0). I want to warn users of the earlier version of the breaking changes. I don't want to deprecate anything, I just want to remove old features and keep the bare minimum for the new version.
+  A: Now - I'm going to release this as a major version upgrade (1.0.0). I want to warn users of the earlier version of the breaking changes. I don't want to deprecate anything, I just want to remove old features and keep the bare minimum for the new version.
 
   9. Book Workflow Integration
 
@@ -194,17 +194,31 @@ This is a complete reimagining of Aditi as a direct, no-nonsense tool that does 
 #### Primary Commands (Rule-Based)
 ```bash
 # Direct operation on current directory
-aditi <RuleName>                    # Prompts for flag/fix choice
-aditi <RuleName> flag               # Insert comments on line above reported issue
-aditi <RuleName> unflag             # Remove issue comments
-aditi <RuleName> autofix            # Apply auto-fixes, if available
+aditi                     # Lists all special commands and RuleName choices. Same as entering `aditi --help`
+aditi <RuleName>          # Prompts for flag/fix choice
+aditi <RuleName> flag     # Insert issue comments on line above reported issue
+aditi <RuleName> unflag   # Remove issue comments
+aditi <RuleName> autofix  # Apply auto-fixes, if available
 
 # Book operation
 aditi <RuleName> flag <path>/master.adoc
+aditi <RuleName> unflag <path>/master.adoc
 aditi <RuleName> autofix <path>/master.adoc
 
 # Special command for all Vale issues
-aditi ValeFlagger                   # Flag all Vale issues
+aditi ValeFlagger              # Flag all issues reported by Vale running the AsciiDocDITA style rules.
+```
+
+A: Add special command to archive unused files based on /home/rolfedh/doc-utils/archive_unused_files.py
+
+# Special command for all Vale issues
+```
+aditi ArchiveUnusedFiles         # Display help for Archive unused files
+
+aditi ArchiveUnusedFiles --dry-run # Find unused files, output a list of them. Also output a suggestion to use the:
+
+- `--report` option to find files that aren't used anywhere else in the repo. for a file containing the list of files in an `./archive` directory (create it if needed),
+- use `--archive` to create a report and an zip file containing the archived files in an `./archive` directory (create it if needed).
 ```
 
 #### Examples
@@ -212,8 +226,8 @@ aditi ValeFlagger                   # Flag all Vale issues
 cd ~/docs/my-project
 aditi ContentType                   # Prompts: "flag or fix?"
 aditi ContentType flag              # Adds // Error: ContentType comments
-aditi ContentType autofix               # Auto-fixes content type issues
-aditi EntityReference autofix           # Auto-fixes entity references
+aditi ContentType autofix       # Auto-fixes content type issues
+aditi EntityReference autofix   # Auto-fixes entity references
 
 # For books
 aditi ContentType autofix guides/master.adoc
@@ -223,9 +237,10 @@ aditi ContentType autofix guides/master.adoc
 
 #### What to Keep
 - Vale container integration (but optimize for speed)
-- Rule engine (but remove prerequisites)
+- Rule engine (but remove prerequisites and fix-tracking)
 - Basic file scanning
 - Auto-fix logic for deterministic rules
+
 
 #### What to Remove
 - All journey workflow code
@@ -375,17 +390,25 @@ src/aditi/
 - Should `aditi --help` list all available rules?
 - Or add `aditi list-rules` command?
 
+A:
+
 ### 2. ValeFlagger Behavior
 - Should ValeFlagger run ALL Vale rules or just AsciiDocDITA?
 - How to handle if user has other Vale styles configured?
 
+A:
+
 ### 3. Issue Comments Format
 - Current: `// <Type>: <RuleName> - <message>`
+
+A:
 
 ### 4. Container Timeouts
 - Current timeout is 2 minutes - is this the issue?
 - Should we increase it or make it configurable?
 - Native Vale would eliminate this problem entirely
+
+A:
 
 ### 5. Feature Preservation
 From current features, should we keep any of these?
@@ -394,12 +417,16 @@ From current features, should we keep any of these?
 - Rule descriptions/help
 - Ability to exclude certain directories
 
+A:
+
 ### 6. Exit Codes
 For scripting/automation:
 - 0 = success
 - 1 = errors found (for flag operations)
 - 2 = operation failed
 - Is this sufficient?
+
+A:
 
 ### 7. Future Considerations
 After v1.0.0 ships, would you consider:
@@ -408,7 +435,12 @@ After v1.0.0 ships, would you consider:
 - GitHub Actions integration
 - Rule customization
 
+A:
+
+
 ### 8. Documentation
 - Should we keep the Jekyll docs site?
 - Or simplify to just README + man page?
 - What examples would be most helpful?
+
+A:
