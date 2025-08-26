@@ -69,13 +69,25 @@ aditi init
 ### 2. Configure Access Paths
 
 ```bash
+# Interactive mode (default)
 aditi journey
+
+# Process specific files directly
+aditi journey docs/guide.adoc docs/reference.adoc
+
+# Process entire directories
+aditi journey docs/ examples/
+
+# Mix files and directories
+aditi journey README.adoc docs/ examples/user-guide.adoc
 ```
 
-**Interactive setup:**
-- Select directories containing AsciiDoc files
+**Features:**
+- Interactive directory selection when no paths provided
+- Direct file/directory processing when paths specified
 - Configure repository permissions
 - Set working preferences
+- Session continuity for interrupted workflows
 
 ### 3. Analyze Your Files
 
