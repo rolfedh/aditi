@@ -124,7 +124,14 @@ def fix_command(
         fixable_violations = []
         non_fixable_violations = []
         
+        # Skip informational suggestion-level rules per GitHub issue #26
+        informational_rules = {"AttributeReference", "ConditionalCode", "IncludeDirective", "TagDirective"}
+        
         for violation in violations:
+            # Skip informational rules entirely
+            if violation.rule_name in informational_rules:
+                continue
+                
             rule_instance = processor.rule_registry.get_rule_for_violation(violation)
             if rule_instance and rule_instance.fix_type in [FixType.FULLY_DETERMINISTIC, FixType.PARTIALLY_DETERMINISTIC]:
                 fixable_violations.append(violation)

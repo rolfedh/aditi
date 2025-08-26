@@ -848,6 +848,14 @@ def apply_rules_workflow(paths: Optional[List[Path]] = None) -> bool:
 
     # Process each rule in order with fresh Vale runs
     for rule_index, (rule_name, severity, description) in enumerate(RULE_PROCESSING_ORDER[start_index:], start=start_index):
+        # Skip informational suggestion-level rules per GitHub issue #26
+        if rule_name in ["AttributeReference", "ConditionalCode", "IncludeDirective", "TagDirective"]:
+            console.print(f"[dim]Skipping informational rule {rule_name} (suggestion-level only)[/dim]")
+            # Mark as applied so it doesn't get processed again
+            session.applied_rules.append(rule_name)
+            config_manager.save_session(session)
+            continue
+            
         # Get the rule instance first to check if it's implemented
         rule = processor.rule_registry.get_rule(rule_name)
         if not rule:
