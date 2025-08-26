@@ -208,6 +208,14 @@ def fix(
 
 @app.command()
 def journey(
+    paths: Optional[List[Path]] = typer.Argument(
+        None,
+        help="Paths to process (files or directories). If not specified, uses interactive selection.",
+        exists=True,
+        file_okay=True,
+        dir_okay=True,
+        readable=True,
+    ),
     dry_run: bool = typer.Option(
         False,
         "--dry-run",
@@ -239,7 +247,7 @@ def journey(
     Use --status to view current session progress.
     """
     setup_logging(verbose)
-    journey_command(dry_run=dry_run, clear=clear, status=status)
+    journey_command(paths=paths, dry_run=dry_run, clear=clear, status=status)
 
 
 @app.command()

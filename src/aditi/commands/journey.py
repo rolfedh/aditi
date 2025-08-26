@@ -231,8 +231,15 @@ RULE_PROCESSING_ORDER = [
 ]
 
 
-def journey_command(dry_run: bool = False, clear: bool = False, status: bool = False) -> None:
-    """Start an interactive journey to prepare AsciiDoc files for DITA migration."""
+def journey_command(paths: Optional[List[Path]] = None, dry_run: bool = False, clear: bool = False, status: bool = False) -> None:
+    """Start an interactive journey to prepare AsciiDoc files for DITA migration.
+    
+    Args:
+        paths: Optional list of file or directory paths to process
+        dry_run: Show what would be done without making changes
+        clear: Clear current session and start fresh
+        status: Show current session status
+    """
     config_manager = ConfigManager()
     
     # Handle --clear flag
@@ -394,11 +401,11 @@ def journey_command(dry_run: bool = False, clear: bool = False, status: bool = F
             
     # Phase 1: Repository Configuration  
     if not session.journey_state or session.journey_state != "configured":
-        if not configure_repository():
+        if not configure_repository(paths):
             return
 
     # Phase 2: Rule Application Workflow
-    completed = apply_rules_workflow()
+    completed = apply_rules_workflow(paths)
 
     # Phase 3: Completion
     if completed:
@@ -407,8 +414,11 @@ def journey_command(dry_run: bool = False, clear: bool = False, status: bool = F
         console.print("\n[yellow]Journey paused. Run 'aditi journey' again to resume.[/yellow]")
 
 
-def configure_repository() -> bool:
+def configure_repository(paths: Optional[List[Path]] = None) -> bool:
     """Configure repository and directory selection.
+
+    Args:
+        paths: Optional list of file or directory paths to process
 
     Returns:
         True if configuration was successful, False otherwise
@@ -435,142 +445,184 @@ def configure_repository() -> bool:
     current_dir = Path.cwd()
     console.print(f"\n📁 Current directory: [cyan]{current_dir}[/cyan]")
 
-    # Check for .git directory
-    if not (current_dir / ".git").exists():
-        console.print("[yellow]Warning: No .git directory found. This may not be a repository root.[/yellow]")
-
-    # Ask if this is the repository root
-    is_root = questionary.confirm(
-        "Is this the root directory of your repository?",
-        default=True
-    ).ask()
-
-    if not is_root:
-        console.print(
-            "\n[red]Please cd to the root directory of your repository and rerun the 'aditi journey' command.[/red]"
-        )
-        raise typer.Exit(1)
-
-    # Ask about path selection method
-    console.print("\n📂 Directory Selection")
-    path_choice = questionary.select(
-        "Which directories do you want to work on?",
-        choices=[
-            "Process all directories with .adoc files",
-            "Let me choose specific directories",
-            "Enter custom directory paths"
-        ]
-    ).ask()
-
-    if path_choice == "Process all directories with .adoc files":
-        # Use all directories with .adoc files
-        selected_dirs = None
-    elif path_choice == "Let me choose specific directories":
-        selected_dirs = select_directories(current_dir)
-        if not selected_dirs:
-            console.print("[red]No directories selected. Exiting.[/red]")
+    # If paths were provided via command line, use them directly
+    if paths:
+        console.print("\n📂 Using provided paths:")
+        selected_dirs = []
+        selected_files = []
+        
+        for path in paths:
+            # Convert to absolute path if needed
+            if not path.is_absolute():
+                path = current_dir / path
+                
+            if path.is_file() and path.suffix == ".adoc":
+                selected_files.append(path)
+                console.print(f"  • {path.relative_to(current_dir)} (file)")
+            elif path.is_dir():
+                # Check for .adoc files in directory
+                adoc_count = len(list(path.rglob("*.adoc")))
+                if adoc_count > 0:
+                    selected_dirs.append(path.relative_to(current_dir))
+                    console.print(f"  • {path.relative_to(current_dir)}/ ({adoc_count} .adoc files)")
+                else:
+                    console.print(f"  [yellow]⚠ {path.relative_to(current_dir)}/ has no .adoc files[/yellow]")
+            else:
+                console.print(f"  [red]✗ Invalid path: {path}[/red]")
+        
+        if not selected_dirs and not selected_files:
+            console.print("[red]No valid AsciiDoc files or directories found in provided paths.[/red]")
             return False
+            
+        # Store both directories and individual files for processing
+        if selected_files:
+            # Convert files to their parent directories for configuration
+            file_dirs = list(set(f.parent.relative_to(current_dir) for f in selected_files))
+            selected_dirs.extend(file_dirs)
+            # Store the specific files in session for later filtering
+            session = config_manager.load_session()
+            session.journey_progress = session.journey_progress or {}
+            session.journey_progress["selected_files"] = [str(f) for f in selected_files]
+            config_manager.save_session(session)
+            
     else:
-        # Enter custom paths
-        custom_paths = []
-        console.print("\n📁 Enter Custom Directory Paths")
-        console.print(f"[dim]Repository root: {current_dir}[/dim]")
-        
-        # Show available top-level directories to help users
-        console.print("\n[dim]Available directories:[/dim]")
-        try:
-            top_dirs = []
-            for item in current_dir.iterdir():
-                if item.is_dir() and not item.name.startswith('.'):
+        # Original interactive mode
+        # Check for .git directory
+        if not (current_dir / ".git").exists():
+            console.print("[yellow]Warning: No .git directory found. This may not be a repository root.[/yellow]")
+
+        # Ask if this is the repository root
+        is_root = questionary.confirm(
+            "Is this the root directory of your repository?",
+            default=True
+        ).ask()
+
+        if not is_root:
+            console.print(
+                "\n[red]Please cd to the root directory of your repository and rerun the 'aditi journey' command.[/red]"
+            )
+            raise typer.Exit(1)
+
+        # Ask about path selection method
+        console.print("\n📂 Directory Selection")
+        path_choice = questionary.select(
+            "Which directories do you want to work on?",
+            choices=[
+                "Process all directories with .adoc files",
+                "Let me choose specific directories",
+                "Enter custom directory paths"
+            ]
+        ).ask()
+
+        if path_choice == "Process all directories with .adoc files":
+            # Use all directories with .adoc files
+            selected_dirs = None
+        elif path_choice == "Let me choose specific directories":
+            selected_dirs = select_directories(current_dir)
+            if not selected_dirs:
+                console.print("[red]No directories selected. Exiting.[/red]")
+                return False
+        else:
+            # Enter custom paths
+            custom_paths = []
+            console.print("\n📁 Enter Custom Directory Paths")
+            console.print(f"[dim]Repository root: {current_dir}[/dim]")
+            
+            # Show available top-level directories to help users
+            console.print("\n[dim]Available directories:[/dim]")
+            try:
+                top_dirs = []
+                for item in current_dir.iterdir():
+                    if item.is_dir() and not item.name.startswith('.'):
+                        # Check if it has .adoc files
+                        has_adoc = any(item.rglob("*.adoc"))
+                        if has_adoc:
+                            adoc_count = len(list(item.rglob("*.adoc")))
+                            top_dirs.append((item.name, adoc_count))
+                
+                if top_dirs:
+                    # Sort by file count
+                    top_dirs.sort(key=lambda x: x[1], reverse=True)
+                    for dir_name, count in top_dirs[:10]:  # Show max 10
+                        console.print(f"  • {dir_name}/ ({count} .adoc files)")
+                    if len(top_dirs) > 10:
+                        console.print(f"  [dim]... and {len(top_dirs) - 10} more directories[/dim]")
+                else:
+                    console.print("  [dim]No directories with .adoc files found[/dim]")
+            except Exception:
+                pass
+            
+            console.print("\n[bold]Examples:[/bold]")
+            console.print("  • docs")
+            console.print("  • modules/api")
+            console.print("  • src/main/asciidoc")
+            console.print("\nPress Enter with empty input when done.\n")
+            
+            while True:
+                # Simple text input without autocomplete
+                path_str = questionary.text(
+                    "Directory path:"
+                ).ask()
+                
+                if not path_str:
+                    break
+                    
+                # Clean up the path - normalize various input formats
+                path_str = path_str.strip()
+                # Remove leading ./ or /
+                if path_str.startswith('./'):
+                    path_str = path_str[2:]
+                elif path_str.startswith('/'):
+                    path_str = path_str[1:]
+                # Remove trailing /
+                if path_str.endswith('/'):
+                    path_str = path_str[:-1]
+                
+                path = Path(path_str)
+                full_path = current_dir / path
+                
+                if full_path.exists() and full_path.is_dir():
                     # Check if it has .adoc files
-                    has_adoc = any(item.rglob("*.adoc"))
-                    if has_adoc:
-                        adoc_count = len(list(item.rglob("*.adoc")))
-                        top_dirs.append((item.name, adoc_count))
-            
-            if top_dirs:
-                # Sort by file count
-                top_dirs.sort(key=lambda x: x[1], reverse=True)
-                for dir_name, count in top_dirs[:10]:  # Show max 10
-                    console.print(f"  • {dir_name}/ ({count} .adoc files)")
-                if len(top_dirs) > 10:
-                    console.print(f"  [dim]... and {len(top_dirs) - 10} more directories[/dim]")
-            else:
-                console.print("  [dim]No directories with .adoc files found[/dim]")
-        except Exception:
-            pass
-        
-        console.print("\n[bold]Examples:[/bold]")
-        console.print("  • docs")
-        console.print("  • modules/api")
-        console.print("  • src/main/asciidoc")
-        console.print("\nPress Enter with empty input when done.\n")
-        
-        while True:
-            # Simple text input without autocomplete
-            path_str = questionary.text(
-                "Directory path:"
-            ).ask()
-            
-            if not path_str:
-                break
-                
-            # Clean up the path - normalize various input formats
-            path_str = path_str.strip()
-            # Remove leading ./ or /
-            if path_str.startswith('./'):
-                path_str = path_str[2:]
-            elif path_str.startswith('/'):
-                path_str = path_str[1:]
-            # Remove trailing /
-            if path_str.endswith('/'):
-                path_str = path_str[:-1]
-            
-            path = Path(path_str)
-            full_path = current_dir / path
-            
-            if full_path.exists() and full_path.is_dir():
-                # Check if it has .adoc files
-                adoc_files = list(full_path.rglob("*.adoc"))
-                if adoc_files:
-                    custom_paths.append(path)
-                    console.print(f"  ✓ Added: {path} ({len(adoc_files)} .adoc files)")
-                else:
-                    console.print(f"  [yellow]⚠ Warning: {path} has no .adoc files[/yellow]")
-                    add_anyway = questionary.confirm("Add anyway?", default=False).ask()
-                    if add_anyway:
+                    adoc_files = list(full_path.rglob("*.adoc"))
+                    if adoc_files:
                         custom_paths.append(path)
-                        console.print(f"  ✓ Added: {path}")
-            else:
-                console.print(f"  [red]✗ Directory not found: {path}[/red]")
-                
-                # Provide helpful suggestions
-                if not full_path.exists():
-                    # Try to find similar directories
-                    parent = full_path.parent
-                    if parent.exists():
-                        similar = []
-                        try:
-                            for item in parent.iterdir():
-                                if item.is_dir() and path_str.lower() in item.name.lower():
-                                    similar.append(item.name)
-                        except:
-                            pass
-                        
-                        if similar:
-                            console.print(f"    [dim]Did you mean one of these?[/dim]")
-                            for s in similar[:3]:
-                                console.print(f"    [dim]  • {parent.relative_to(current_dir)}/{s}[/dim]")
+                        console.print(f"  ✓ Added: {path} ({len(adoc_files)} .adoc files)")
                     else:
-                        console.print(f"    [dim]Parent directory doesn't exist: {parent.relative_to(current_dir)}[/dim]")
+                        console.print(f"  [yellow]⚠ Warning: {path} has no .adoc files[/yellow]")
+                        add_anyway = questionary.confirm("Add anyway?", default=False).ask()
+                        if add_anyway:
+                            custom_paths.append(path)
+                            console.print(f"  ✓ Added: {path}")
                 else:
-                    console.print(f"    [dim]Path exists but is not a directory[/dim]")
-        
-        if not custom_paths:
-            console.print("[red]No valid paths entered. Exiting.[/red]")
-            return False
+                    console.print(f"  [red]✗ Directory not found: {path}[/red]")
+                    
+                    # Provide helpful suggestions
+                    if not full_path.exists():
+                        # Try to find similar directories
+                        parent = full_path.parent
+                        if parent.exists():
+                            similar = []
+                            try:
+                                for item in parent.iterdir():
+                                    if item.is_dir() and path_str.lower() in item.name.lower():
+                                        similar.append(item.name)
+                            except:
+                                pass
+                            
+                            if similar:
+                                console.print(f"    [dim]Did you mean one of these?[/dim]")
+                                for s in similar[:3]:
+                                    console.print(f"    [dim]  • {parent.relative_to(current_dir)}/{s}[/dim]")
+                        else:
+                            console.print(f"    [dim]Parent directory doesn't exist: {parent.relative_to(current_dir)}[/dim]")
+                    else:
+                        console.print(f"    [dim]Path exists but is not a directory[/dim]")
             
-        selected_dirs = custom_paths
+            if not custom_paths:
+                console.print("[red]No valid paths entered. Exiting.[/red]")
+                return False
+                
+            selected_dirs = custom_paths
 
     # Save configuration
     save_configuration(current_dir, selected_dirs)
@@ -728,8 +780,11 @@ def save_configuration(root_path: Path, selected_dirs: Optional[List[Path]]) -> 
     config_manager.save_session(session)
 
 
-def apply_rules_workflow() -> bool:
+def apply_rules_workflow(paths: Optional[List[Path]] = None) -> bool:
     """Apply rules in the correct order with user interaction.
+    
+    Args:
+        paths: Optional list of file or directory paths to process
     
     Returns:
         True if workflow completed, False if cancelled by user
@@ -747,7 +802,21 @@ def apply_rules_workflow() -> bool:
         raise typer.Exit(1)
 
     # Get files to process
-    adoc_files = collect_adoc_files(config)
+    if paths:
+        # Use provided paths directly
+        adoc_files = []
+        for path in paths:
+            if path.is_file() and path.suffix == ".adoc":
+                adoc_files.append(path)
+            elif path.is_dir():
+                adoc_files.extend(path.rglob("*.adoc"))
+    elif session.journey_progress and "selected_files" in session.journey_progress:
+        # Use files stored in session from command-line args
+        adoc_files = [Path(f) for f in session.journey_progress["selected_files"]]
+    else:
+        # Use standard collection from config
+        adoc_files = collect_adoc_files(config)
+        
     if not adoc_files:
         console.print("[yellow]No .adoc files found to process.[/yellow]")
         return True  # Consider this as completed since there's nothing to do
