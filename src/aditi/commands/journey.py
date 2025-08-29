@@ -942,11 +942,16 @@ def process_single_rule(rule, issues, description, processor, config_manager) ->
     # Show affected files
     files_affected = list(set(v.file_path for v in issues))
     console.print("These files have this issue:")
-    for i, file_path in enumerate(files_affected[:10]):
-        rel_path = file_path.relative_to(Path.cwd())
-        console.print(f"  • {rel_path}")
-    if len(files_affected) > 10:
-        console.print(f"  ... and {len(files_affected) - 10} more")
+    # Use the processor's file list display helper if available
+    if hasattr(processor, '_display_file_list'):
+        processor._display_file_list(files_affected, rule.name, show_all=False, max_display=10)
+    else:
+        # Fallback to inline display
+        for i, file_path in enumerate(files_affected[:10]):
+            rel_path = file_path.relative_to(Path.cwd())
+            console.print(f"  • {rel_path}")
+        if len(files_affected) > 10:
+            console.print(f"  ... and {len(files_affected) - 10} more")
 
     console.print()
 
@@ -1157,8 +1162,15 @@ def recheck_rule_violations(rule_name: str, files_affected: List[Path], processo
             # Show affected files in the same format as process_single_rule
             files_with_issues = list(set(v.file_path for v in rule_issues))
             console.print("These files have this issue:")
-            for file_path in files_with_issues:
-                console.print(f"  • {file_path}")
+            # Use the processor's file list display helper if available
+            if hasattr(processor, '_display_file_list'):
+                processor._display_file_list(files_with_issues, rule_name, show_all=False, max_display=10)
+            else:
+                # Fallback to inline display
+                for file_path in files_with_issues[:10]:
+                    console.print(f"  • {file_path}")
+                if len(files_with_issues) > 10:
+                    console.print(f"  ... and {len(files_with_issues) - 10} more")
                 
     except Exception as e:
         console.print(f"[red]Error during recheck: {e}[/red]")

@@ -36,6 +36,16 @@ def check_command(
         "-v",
         help="Show detailed violation information",
     ),
+    show_all: bool = typer.Option(
+        False,
+        "--show-all",
+        help="Show all affected files without truncation",
+    ),
+    export_files: Optional[Path] = typer.Option(
+        None,
+        "--export-files",
+        help="Export full list of affected files to specified file",
+    ),
 ) -> None:
     """Check AsciiDoc files for DITA compatibility issues.
     
@@ -184,10 +194,10 @@ def check_command(
             
         # Display detailed results if verbose
         if verbose:
-            _display_verbose_results(result, processor)
+            _display_verbose_results(result, processor, show_all, export_files)
         else:
-            # Display summary
-            processor.display_summary(result)
+            # Display summary with new options
+            processor.display_summary(result, show_all=show_all, export_files=export_files)
             
     except Exception as e:
         console.print(f"[red]Error during check:[/red] {e}")
@@ -198,7 +208,7 @@ def check_command(
             vale_container.cleanup()
 
 
-def _display_verbose_results(result, processor):
+def _display_verbose_results(result, processor, show_all=False, export_files=None):
     """Display verbose results with detailed violation information."""
     console.print("\n📊 Detailed Analysis Results\n")
     

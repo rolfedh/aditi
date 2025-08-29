@@ -156,6 +156,16 @@ def check(
         help="Check only specific rule (e.g., EntityReference)",
     ),
     verbose: bool = verbose_option,
+    show_all: bool = typer.Option(
+        False,
+        "--show-all",
+        help="Show all affected files without truncation",
+    ),
+    export_files: Optional[Path] = typer.Option(
+        None,
+        "--export-files",
+        help="Export full list of affected files to specified file",
+    ),
 ) -> None:
     """Check AsciiDoc files for DITA compatibility issues.
     
@@ -163,7 +173,7 @@ def check(
     to be addressed before migration to DITA.
     """
     setup_logging(verbose)
-    check_command(paths, rule, verbose)
+    check_command(paths, rule, verbose, show_all, export_files)
 
 
 @app.command()
