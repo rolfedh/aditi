@@ -466,13 +466,39 @@ class RuleProcessor:
             console.print(f"[yellow]Warning: Failed to backup {file_path}:[/yellow] {e}")
             return False
             
-    def display_summary(self, result: ProcessingResult):
+    def _display_file_list(self, files: List[Path], rule_name: str, show_all: bool = False, max_display: int = 10) -> None:
+        """Display a list of files with optional truncation.
+        
+        Args:
+            files: List of file paths
+            rule_name: Name of the rule for context
+            show_all: If True, show all files without truncation
+            max_display: Maximum number of files to show when not showing all
+        """
+        if show_all or len(files) <= max_display:
+            # Show all files
+            for file_path in files:
+                rel_path = file_path.relative_to(Path.cwd())
+                console.print(f"  • {rel_path}")
+        else:
+            # Show truncated list
+            for file_path in files[:max_display]:
+                rel_path = file_path.relative_to(Path.cwd())
+                console.print(f"  • {rel_path}")
+            console.print(f"  ... and {len(files) - max_display} more")
+    
+    def display_summary(self, result: ProcessingResult, show_all: bool = False, export_files: Optional[Path] = None):
         """Display a summary of the processing results.
         
         Args:
             result: The processing result to display
+            show_all: If True, show all affected files without truncation
+            export_files: If provided, export full file list to this path
         """
         console.print("\n📊 Analysis Results\n")
+        
+        # Prepare export data if needed
+        export_data = {} if export_files else None
         
         # Violations by rule
         rule_counts = result.get_violations_by_rule()
@@ -497,6 +523,22 @@ class RuleProcessor:
                     for rule_name in rules_of_type:
                         count = rule_counts[rule_name]
                         console.print(f"  {rule_name} ({count} {'issue' if count == 1 else 'issues'})")
+                        
+                        # Get affected files for this rule
+                        affected_files = list(set(
+                            v.file_path for v in result.violations_found 
+                            if v.rule_name == rule_name
+                        ))
+                        
+                        # Store in export data if needed
+                        if export_data is not None:
+                            export_data[rule_name] = [str(f.relative_to(Path.cwd())) for f in affected_files]
+                        
+                        # Display files if show_all or in verbose mode
+                        if show_all and affected_files:
+                            console.print("    Files affected:")
+                            self._display_file_list(affected_files, rule_name, show_all=True)
+                            
                     console.print()  # Blank line after each section
             
             # Show unimplemented rules
@@ -533,5 +575,27 @@ class RuleProcessor:
         if result.total_violations > 0 and auto_fixable > 0:
             auto_fix_percentage = (auto_fixable / result.total_violations) * 100
             console.print(f"\n✨ Good news! {auto_fix_percentage:.0f}% of issues can be fixed automatically.")
-            
+        
+        # Export file list if requested
+        if export_files and export_data:
+            try:
+                with open(export_files, 'w') as f:
+                    # Write header
+                    f.write(f"# Aditi Check Results - Files with Issues\n")
+                    f.write(f"# Generated: {datetime.now().isoformat()}\n")
+                    f.write(f"# Total files: {len(result.files_processed)}\n")
+                    f.write(f"# Total issues: {result.total_violations}\n\n")
+                    
+                    # Write files by rule
+                    for rule_name in sorted(export_data.keys()):
+                        files = export_data[rule_name]
+                        f.write(f"## {rule_name} ({len(files)} files)\n")
+                        for file_path in sorted(files):
+                            f.write(f"  - {file_path}\n")
+                        f.write("\n")
+                        
+                console.print(f"\n✓ Full file list exported to: {export_files}")
+            except Exception as e:
+                console.print(f"\n[red]Error exporting file list:[/red] {e}")
+                
         console.print("\nNext step: Run 'aditi journey' for guided workflow")
