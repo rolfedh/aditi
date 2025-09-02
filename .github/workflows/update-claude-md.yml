@@ -13,8 +13,8 @@ on:
       - 'scripts/**'
   
   # Weekly automatic update on Sundays at 6 AM UTC
-  schedule:
-    - cron: '0 6 * * 0'
+  # schedule:
+  #   - cron: '0 6 * * 0'
   
   # Allow manual triggering
   workflow_dispatch:
