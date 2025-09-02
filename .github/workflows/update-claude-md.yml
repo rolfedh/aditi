@@ -1,16 +1,16 @@
 name: Update CLAUDE.md
 
 on:
-  # Trigger on significant changes
-  push:
-    branches: [main]
-    paths:
-      - 'src/**'
-      - 'tests/**'
-      - 'pyproject.toml'
-      - '.github/workflows/**'
-      - 'docs/_config.yml'
-      - 'scripts/**'
+  # Trigger on significant changes - DISABLED
+  # push:
+  #   branches: [main]
+  #   paths:
+  #     - 'src/**'
+  #     - 'tests/**'
+  #     - 'pyproject.toml'
+  #     - '.github/workflows/**'
+  #     - 'docs/_config.yml'
+  #     - 'scripts/**'
   
   # Weekly automatic update on Sundays at 6 AM UTC
   # schedule:
