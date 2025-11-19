@@ -291,11 +291,12 @@ class ValeContainer:
             self.runtime, "run", "--rm",
             "--user", f"{os.getuid()}:{os.getgid()}",
             "--memory=512m",      # Limit memory usage
-            "--cpus=2",           # Limit CPU usage  
+            "--cpus=2",           # Limit CPU usage
             "--security-opt=no-new-privileges",  # Security hardening
             "-v", f"{abs_project_root}:/docs:ro,z",  # Read-only mount with SELinux context
             "-w", "/docs",
             "--env", "HOME=/docs",
+            "--env", "VALE_CONFIG_PATH=/docs/.vale.ini",  # Point to config file
             self.VALE_IMAGE,
             "--output", output_format,
             str(rel_target)
@@ -515,11 +516,12 @@ BasedOnStyles = AsciiDocDITA
         
         # Run Vale in container with optimized flags
         cmd = [
-            self.runtime, "run", "--rm", 
+            self.runtime, "run", "--rm",
             "--memory=512m",  # Limit memory usage
             "--cpus=2",       # Limit CPU usage
-            "-v", f"{project_root.absolute()}:/docs",
+            "-v", f"{project_root.absolute()}:/docs:z",  # Add SELinux context
             "-w", "/docs",
+            "--env", "VALE_CONFIG_PATH=/docs/.vale.ini",  # Point to config file
             self.VALE_IMAGE,
         ] + args
         
